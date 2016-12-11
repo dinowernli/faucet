@@ -5,5 +5,6 @@ go_binary(
     srcs = ["worker.go"],
     deps = [
         "//demo:go_default_library",
+        "//proto/config:go_default_library",
     ],
 )

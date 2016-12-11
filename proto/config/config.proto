@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package faucet.config;
+
+// The configuration used by coordinators.
+message Configuration {
+  repeated Worker workers = 1;
+}
+
+// Points to a worker capable of executing builds.
+message Worker {
+  string grpc_host = 1;
+  int32 grpc_port = 2;
+}
