@@ -6,5 +6,6 @@ go_binary(
     deps = [
         "//demo:go_default_library",
         "//proto/config:go_default_library",
+        "//proto/service/worker:go_default_library",
     ],
 )

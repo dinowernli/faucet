@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package faucet.service.worker;
+
+message StatusRequest {
+}
+
+message StatusResponse {
+}
+
+service Worker {
+  rpc Status (StatusRequest) returns (StatusResponse);
+}
