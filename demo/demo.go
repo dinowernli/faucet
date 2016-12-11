@@ -1,5 +1,5 @@
 package demo
 
-func foo() string {
-	return ""
+func Foo() string {
+	return "Hello world"
 }
