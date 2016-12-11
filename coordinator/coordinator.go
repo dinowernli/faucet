@@ -1,15 +1,24 @@
-package main
+package coordinator
 
 import (
 	"fmt"
 	"log"
 
 	pb_config "dinowernli.me/faucet/proto/config"
+	pb_worker "dinowernli.me/faucet/proto/service/worker"
 
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
-func main() {
+type Coordinator struct {
+}
+
+func New() *Coordinator {
+	return &Coordinator{}
+}
+
+func (c *Coordinator) Start() {
 	log.Printf("Starting coordinator")
 
 	config := &pb_config.Configuration{
@@ -37,12 +46,21 @@ func pollStatus(address string, done chan (bool)) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
 
-	_, err := grpc.Dial(address, opts...)
+	connection, err := grpc.Dial(address, opts...)
 	if err != nil {
-		log.Printf("Failed to connect to %s: %v", address, err)
-	} else {
-		log.Printf("Successfully dialed: %s", address)
+		log.Fatalf("Failed to connect to %s: %v", address, err)
 	}
+
+	log.Printf("Successfully dialed: %s", address)
+	defer connection.Close()
+
+	client := pb_worker.NewWorkerClient(connection)
+	response, err := client.Status(context.TODO(), &pb_worker.StatusRequest{})
+	if err != nil {
+		log.Fatalf("Failed to retrieve status: %v", err)
+	}
+
+	log.Printf("Got response: %v", response)
 
 	done <- true
 }
