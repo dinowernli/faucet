@@ -29,11 +29,11 @@ func main() {
 	server := grpc.NewServer()
 	pb_worker.RegisterWorkerServer(server, &workerService{})
 
-	listen, err := net.Listen("tcp", ":8080")
+	listen, err := net.Listen("tcp", ":12345")
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	log.Printf("Starting server")
+	log.Printf("Starting worker server on port 12345")
 	server.Serve(listen)
 }
