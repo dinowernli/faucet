@@ -11,4 +11,7 @@ go_binary(
         "//worker:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
     ],
+    data = [
+        "config.json",
+    ],
 )

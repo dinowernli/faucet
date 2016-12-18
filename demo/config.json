@@ -1,0 +1,8 @@
+{
+  "workers": [
+    {
+      "grpcHost": "localhost",
+      "grpcPort": 12345
+    }
+  ]
+}

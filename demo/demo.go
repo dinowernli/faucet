@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"dinowernli.me/faucet/config"
 	"dinowernli.me/faucet/coordinator"
@@ -15,14 +16,25 @@ import (
 
 const (
 	workerPort = 12345
+
+	// TODO(dino): Use flags for these.
+	configFilePath = "demo/config.json"
+)
+
+var (
+	// TODO(dino): Use flags for these.
+	configFilePollFrequency = time.Second * 3
 )
 
 func main() {
 	worker := worker.New()
 	log.Printf("Created worker")
 
-	// TODO(dino): Replace this with a file that actually exists.
-	coordinator := coordinator.New(config.NewLoader("some-file.txt"))
+	loader, err := config.NewLoader(configFilePath, configFilePollFrequency)
+	if err != nil {
+		log.Fatalf("Unable to create config loader for path [%s]: %v", configFilePath, err)
+	}
+	coordinator := coordinator.New(loader)
 	log.Printf("Created coordinator")
 
 	go startServer(worker)
