@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = ["coordinator.go"],
     deps = [
+        "//config:go_default_library",
         "//proto/config:go_default_library",
         "//proto/service/worker:go_default_library",
         "@org_golang_google_grpc//:go_default_library",

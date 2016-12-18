@@ -6,10 +6,13 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Worker represents an agent in the system capable of executing builds. More
+// specifically, a Worker has an implementation of the faucet worker service.
 type Worker struct {
 	Service *workerService
 }
 
+// New creates a new worker.
 func New() *Worker {
 	return &Worker{Service: &workerService{}}
 }

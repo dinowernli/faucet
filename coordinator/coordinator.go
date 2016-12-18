@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"dinowernli.me/faucet/config"
 	pb_config "dinowernli.me/faucet/proto/config"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 
@@ -11,11 +12,16 @@ import (
 	"google.golang.org/grpc"
 )
 
+// Coordinator represents an agent in the system which implements the faucet
+// coordinator service. The coordinator uses faucet workers it knows of in
+// order to make sure builds get executed.
 type Coordinator struct {
+	configLoader config.Loader
 }
 
-func New() *Coordinator {
-	return &Coordinator{}
+// New creates a new coordinator, and is otherwise side-effect free.
+func New(configLoader config.Loader) *Coordinator {
+	return &Coordinator{configLoader: configLoader}
 }
 
 func (c *Coordinator) Start() {
