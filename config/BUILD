@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["loader.go"],
+    deps = [
+        "//proto/config:go_default_library",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = ["loader_test.go"],
+    library = ":go_default_library",
+)

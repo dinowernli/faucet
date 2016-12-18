@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	"dinowernli.me/faucet/config"
 	"dinowernli.me/faucet/coordinator"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 	"dinowernli.me/faucet/worker"
@@ -20,7 +21,8 @@ func main() {
 	worker := worker.New()
 	log.Printf("Created worker")
 
-	coordinator := coordinator.New()
+	// TODO(dino): Replace this with a file that actually exists.
+	coordinator := coordinator.New(config.NewLoader("some-file.txt"))
 	log.Printf("Created coordinator")
 
 	go startServer(worker)
