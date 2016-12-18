@@ -38,7 +38,7 @@ func NewLoader(filepath string, pollFrequency time.Duration) (Loader, error) {
 		callbacksLock: &sync.Mutex{},
 	}
 
-	// Kick off a gorouting to monitor the file.
+	// Kick off a goroutin to monitor the file.
 	go result.pollFile(filepath)
 
 	return result, nil

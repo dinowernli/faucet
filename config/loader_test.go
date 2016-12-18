@@ -28,6 +28,7 @@ func TestLoader_InitialCallback(t *testing.T) {
 		config = c
 	})
 
+	// TODO(dino): Have better messaging once we have proper assertions.
 	if len(config.Workers) != 1 {
 		t.Errorf("Unexpected number of workers")
 	}
