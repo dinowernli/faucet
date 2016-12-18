@@ -27,14 +27,12 @@ func New(configLoader config.Loader) *Coordinator {
 func (c *Coordinator) Start() {
 	log.Printf("Starting coordinator")
 
-	config := &pb_config.Configuration{
-		Workers: []*pb_config.Worker{
-			&pb_config.Worker{
-				GrpcHost: "localhost",
-				GrpcPort: 12345,
-			},
-		},
-	}
+	// TODO(dino): Make the config a field and set up atomic updates.
+	var config *pb_config.Configuration
+	c.configLoader.Listen(func(c *pb_config.Configuration) {
+		config = c
+	})
+
 	log.Printf("Using config: %v", config)
 
 	done := make(chan bool)

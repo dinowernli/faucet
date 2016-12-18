@@ -6,6 +6,7 @@ message StatusRequest {
 }
 
 message StatusResponse {
+  bool healthy = 1;
 }
 
 service Worker {
