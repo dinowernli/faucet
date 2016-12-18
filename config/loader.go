@@ -97,6 +97,7 @@ func (l *loader) pollFile(filepath string) {
 		if err != nil {
 			// TODO(dino): Use a proper logger and warn here.
 			log.Printf("Polling file [%s] failed: %v", filepath, err)
+			continue
 		}
 
 		if l.updateConfig(config) {
