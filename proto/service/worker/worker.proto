@@ -10,6 +10,7 @@ message StatusRequest {
 
 message StatusResponse {
   bool healthy = 1;
+  int32 queue_size = 2;
 }
 
 // The current state of a requested execution.
