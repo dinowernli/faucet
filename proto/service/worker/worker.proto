@@ -58,5 +58,9 @@ message ExecutionResponse {
 
 service Worker {
   rpc Status (StatusRequest) returns (StatusResponse);
+
+  // After requesting, multiple instance of ExecutionResponse are streamed to
+  // the caller. The stream ends with the first ExecutionResponse containing a
+  // status of type "Finished".
   rpc Execute (ExecutionRequest) returns (stream ExecutionResponse);
 }
