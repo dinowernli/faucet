@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package faucet.service.worker;
 
+// A request for the overall status of this worker.
 message StatusRequest {
 }
 
@@ -9,6 +10,34 @@ message StatusResponse {
   bool healthy = 1;
 }
 
+// The current state of a requested execution.
+message ExecutionStatus {
+  message Progress {
+    oneof state {
+      Queued queued = 1;
+      Running running = 2;
+      Finished finished = 3;
+    }
+  }
+
+  message Queued {
+    // The position of this execution in the queue.
+    int32 position = 1;
+  }
+  
+  message Running {}
+  message Finished {}
+}
+
+// A request to execute a build.
+message ExecutionRequest {
+}
+
+message ExecutionResponse {
+  ExecutionStatus execution_status = 1;
+}
+
 service Worker {
   rpc Status (StatusRequest) returns (StatusResponse);
+  rpc Execute (ExecutionRequest) returns (stream ExecutionResponse);
 }

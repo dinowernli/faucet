@@ -23,3 +23,8 @@ type workerService struct {
 func (s *workerService) Status(context context.Context, request *pb_worker.StatusRequest) (*pb_worker.StatusResponse, error) {
 	return &pb_worker.StatusResponse{Healthy: true}, nil
 }
+
+func (s *workerService) Execute(request *pb_worker.ExecutionRequest, stream pb_worker.Worker_ExecuteServer) error {
+	// TODO(dino): Actually do something.
+	return nil
+}
