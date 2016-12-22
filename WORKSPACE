@@ -7,7 +7,7 @@ http_archive(
     url = "https://github.com/bazelbuild/rules_go/archive/0.3.1.tar.gz",
 )
 
-load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
+load("@io_bazel_rules_go//go:def.bzl", "go_repositories", "new_go_repository")
 load("@io_bazel_rules_go//proto:go_proto_library.bzl", "go_proto_repositories")
 
 go_repositories()
@@ -19,4 +19,10 @@ http_archive(
     sha256 = "8e4646898fa9298422e69767752680d34cbf21bcae01c401b11aa74fcdb0ef66",
     strip_prefix = "bazel-0.4.1",
     url = "https://github.com/bazelbuild/bazel/archive/0.4.1.tar.gz",
+)
+
+new_go_repository(
+    name = "com_github_sirupsen_logrus",
+    importpath = "github.com/Sirupsen/logrus",
+    commit = "d26492970760ca5d33129d2d799e34be5c4782eb",
 )

@@ -10,6 +10,7 @@ go_binary(
         "//proto/service/worker:go_default_library",
         "//worker:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
     ],
     data = [
         "config.json",
