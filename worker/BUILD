@@ -2,7 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["worker.go"],
+    srcs = ["queue.go", "worker.go"],
     deps = [
         "//bazel:go_default_library",
         "//proto/service/worker:go_default_library",
