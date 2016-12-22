@@ -3,6 +3,8 @@ package worker
 import (
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 
+	"dinowernli.me/faucet/bazel"
+
 	"golang.org/x/net/context"
 )
 
@@ -25,6 +27,8 @@ func (s *workerService) Status(context context.Context, request *pb_worker.Statu
 }
 
 func (s *workerService) Execute(request *pb_worker.ExecutionRequest, stream pb_worker.Worker_ExecuteServer) error {
+	_ = bazel.NewClient(request.Checkout.Workspace)
+
 	// TODO(dino): Actually do something.
 	return nil
 }
