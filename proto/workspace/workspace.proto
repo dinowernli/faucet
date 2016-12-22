@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package faucet.workspace;
+
+// A Bazel workspace.
+message Workspace {
+  // An (arbitrary) name given to the workspace.
+  string name = 1;
+
+  // A source control repository containing the source files for this
+  // workspace. A checkout of the repo must yield a directory structure
+  // understood by Bazel.
+  Repository repository = 2;
+}
+
+// A version control repository.
+message Repository {
+  oneof repo {
+    GitRepository git_repository = 1;
+  }
+
+  // A version control respository backed by git.
+  message GitRepository {
+    // A string which can be passed to "git clone" in order to check out the
+    // respository (at some arbitrary revision).
+    string clone_url = 1;
+  }
+}
+
+// Points to a specific state of a workspace.
+message Revision {
+  oneof rev {
+    GitRevision git_revision = 1;
+  }
+
+  // A revision of a git repository.
+  message GitRevision {
+    string commit_hash = 1;
+  }
+}
+
+// Represents a repository at a particular revision.
+message Checkout {
+  Workspace workspace = 1;
+  Revision revision = 2;
+}
