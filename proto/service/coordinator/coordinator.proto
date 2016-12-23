@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package faucet.service.coordinator;
+
+// A request to asynchronously perform the necessary validation for a change.
+message ChangeValidationRequest {
+  string workspace = 1;
+
+  // TODO(dino): Add revision.
+}
+
+message ChangeValidationResponse {
+  // A unique identifier for the ongoing validation.
+  string validation_id = 1;
+}
+
+message ValidationStatusRequest {
+  string validation_id = 1;
+}
+
+message ValidationStatusResponse {
+}
+
+service Coordinator {
+  rpc ValidateChange (ChangeValidationRequest) returns (ChangeValidationResponse);
+  rpc GetValidationStatus (ValidationStatusRequest) returns (ValidationStatusResponse);
+}
