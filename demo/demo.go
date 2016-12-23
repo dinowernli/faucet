@@ -11,7 +11,7 @@ import (
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 	"dinowernli.me/faucet/worker"
 
-	logrus "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 

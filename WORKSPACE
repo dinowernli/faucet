@@ -24,5 +24,5 @@ http_archive(
 new_go_repository(
     name = "com_github_sirupsen_logrus",
     importpath = "github.com/Sirupsen/logrus",
-    commit = "d26492970760ca5d33129d2d799e34be5c4782eb",
+    tag = "v0.11.0",
 )

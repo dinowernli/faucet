@@ -7,7 +7,7 @@ import (
 	pb_config "dinowernli.me/faucet/proto/config"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 
-	logrus "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
