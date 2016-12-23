@@ -22,9 +22,9 @@ http_archive(
 )
 
 new_go_repository(
-    name = "org_github_stretchr_testify",
-    importpath = "github.com/stretchr/testify",
-    tag = "v1.1.3",
+    name = "com_github_davecgh_go_spew",
+    importpath = "github.com/davecgh/go-spew",
+    tag = "v1.1.0",
 )
 
 new_go_repository(
@@ -34,7 +34,14 @@ new_go_repository(
 )
 
 new_go_repository(
-    name = "com_github_davecgh_go_spew",
-    importpath = "github.com/davecgh/go-spew",
-    tag = "v1.1.0",
+    name = "com_github_sirupsen_logrus",
+    importpath = "github.com/Sirupsen/logrus",
+    tag = "v0.11.0",
 )
+
+new_go_repository(
+    name = "org_github_stretchr_testify",
+    importpath = "github.com/stretchr/testify",
+    tag = "v1.1.3",
+)
+

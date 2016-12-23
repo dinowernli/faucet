@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net"
+	"os"
 	"time"
 
 	"dinowernli.me/faucet/config"
@@ -11,6 +11,7 @@ import (
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 	"dinowernli.me/faucet/worker"
 
+	"github.com/Sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
@@ -27,17 +28,20 @@ var (
 )
 
 func main() {
+	logger := logrus.New()
+	logger.Out = os.Stderr
+
 	worker := worker.New()
-	log.Printf("Created worker")
+	logger.Infof("Created worker")
 
 	loader, err := config.NewLoader(configFilePath, configFilePollFrequency)
 	if err != nil {
-		log.Fatalf("Unable to create config loader for path [%s]: %v", configFilePath, err)
+		logger.Fatalf("Unable to create config loader for path [%s]: %v", configFilePath, err)
 	}
-	coordinator := coordinator.New(loader)
-	log.Printf("Created coordinator")
+	coordinator := coordinator.New(logger, loader)
+	logger.Infof("Created coordinator")
 
-	go startServer(worker)
+	go startServer(logger, worker)
 	go coordinator.Start()
 
 	// TODO(dino): Pass this into the other stuff as a shutdown channel.
@@ -45,15 +49,15 @@ func main() {
 	<-shutdown
 }
 
-func startServer(worker *worker.Worker) {
+func startServer(logger *logrus.Logger, worker *worker.Worker) {
 	server := grpc.NewServer()
 	pb_worker.RegisterWorkerServer(server, worker.Service)
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%v", workerPort))
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		logger.Fatalf("Failed to listen: %v", err)
 	}
 
-	log.Printf("Starting worker server on port %v", workerPort)
+	logger.Infof("Starting worker server on port %v", workerPort)
 	server.Serve(listen)
 }

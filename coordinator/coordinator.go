@@ -2,12 +2,12 @@ package coordinator
 
 import (
 	"fmt"
-	"log"
 
 	"dinowernli.me/faucet/config"
 	pb_config "dinowernli.me/faucet/proto/config"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 
+	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -16,16 +16,17 @@ import (
 // coordinator service. The coordinator uses faucet workers it knows of in
 // order to make sure builds get executed.
 type Coordinator struct {
+	logger       *logrus.Logger
 	configLoader config.Loader
 }
 
 // New creates a new coordinator, and is otherwise side-effect free.
-func New(configLoader config.Loader) *Coordinator {
-	return &Coordinator{configLoader: configLoader}
+func New(logger *logrus.Logger, configLoader config.Loader) *Coordinator {
+	return &Coordinator{logger: logger, configLoader: configLoader}
 }
 
 func (c *Coordinator) Start() {
-	log.Printf("Starting coordinator")
+	c.logger.Infof("Starting coordinator")
 
 	// TODO(dino): Make the config a field and set up atomic updates.
 	var config *pb_config.Configuration
@@ -33,38 +34,38 @@ func (c *Coordinator) Start() {
 		config = c
 	})
 
-	log.Printf("Using config: %v", config)
+	c.logger.Infof("Using config: %v", config)
 
 	done := make(chan bool)
 	for _, worker := range config.Workers {
-		go pollStatus(fmt.Sprintf("%v:%v", worker.GrpcHost, worker.GrpcPort), done)
+		go c.pollStatus(fmt.Sprintf("%v:%v", worker.GrpcHost, worker.GrpcPort), done)
 	}
 	for _, _ = range config.Workers {
 		<-done
 	}
 }
 
-func pollStatus(address string, done chan (bool)) {
-	log.Printf("Starting to poll address: %s", address)
+func (c *Coordinator) pollStatus(address string, done chan (bool)) {
+	c.logger.Infof("Starting to poll address: %s", address)
 
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
 
 	connection, err := grpc.Dial(address, opts...)
 	if err != nil {
-		log.Fatalf("Failed to connect to %s: %v", address, err)
+		c.logger.Fatalf("Failed to connect to %s: %v", address, err)
 	}
 
-	log.Printf("Successfully dialed: %s", address)
+	c.logger.Infof("Successfully dialed: %s", address)
 	defer connection.Close()
 
 	client := pb_worker.NewWorkerClient(connection)
 	response, err := client.Status(context.TODO(), &pb_worker.StatusRequest{})
 	if err != nil {
-		log.Fatalf("Failed to retrieve status: %v", err)
+		c.logger.Fatalf("Failed to retrieve status: %v", err)
 	}
 
-	log.Printf("Got response: %v", response)
+	c.logger.Infof("Got response: %v", response)
 
 	done <- true
 }
