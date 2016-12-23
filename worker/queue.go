@@ -35,7 +35,9 @@ func (q *queue) enqueue(request *pb_worker.ExecutionRequest) {
 func (q *queue) dequeue() *pb_worker.ExecutionRequest {
 	result := q.front
 	newFront := q.front.prev
-	newFront.next = nil
+	if newFront != nil {
+		newFront.next = nil
+	}
 	q.front = newFront
 	q.size--
 	return result.request
