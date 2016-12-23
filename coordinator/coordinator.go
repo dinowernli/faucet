@@ -5,6 +5,7 @@ import (
 
 	"dinowernli.me/faucet/config"
 	pb_config "dinowernli.me/faucet/proto/config"
+	pb_coordinator "dinowernli.me/faucet/proto/service/coordinator"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 
 	"github.com/Sirupsen/logrus"
@@ -16,13 +17,18 @@ import (
 // coordinator service. The coordinator uses faucet workers it knows of in
 // order to make sure builds get executed.
 type Coordinator struct {
+	Service      *coordinatorService
 	logger       *logrus.Logger
 	configLoader config.Loader
 }
 
 // New creates a new coordinator, and is otherwise side-effect free.
 func New(logger *logrus.Logger, configLoader config.Loader) *Coordinator {
-	return &Coordinator{logger: logger, configLoader: configLoader}
+	return &Coordinator{
+		Service:      &coordinatorService{},
+		logger:       logger,
+		configLoader: configLoader,
+	}
 }
 
 func (c *Coordinator) Start() {
@@ -68,4 +74,15 @@ func (c *Coordinator) pollStatus(address string, done chan (bool)) {
 	c.logger.Infof("Got response: %v", response)
 
 	done <- true
+}
+
+type coordinatorService struct {
+}
+
+func (s *coordinatorService) ValidateChange(context.Context, *pb_coordinator.ChangeValidationRequest) (*pb_coordinator.ChangeValidationResponse, error) {
+	return nil, nil
+}
+
+func (s *coordinatorService) GetValidationStatus(context.Context, *pb_coordinator.ValidationStatusRequest) (*pb_coordinator.ValidationStatusResponse, error) {
+	return nil, nil
 }
