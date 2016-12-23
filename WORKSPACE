@@ -24,17 +24,17 @@ http_archive(
 new_go_repository(
     name = "org_github_stretchr_testify",
     importpath = "github.com/stretchr/testify",
-    commit = "f390dcf405f7b83c997eac1b06768bb9f44dec18",
+    tag = "v1.1.3",
 )
 
 new_go_repository(
     name = "com_github_pmezard_go_difflib",
     importpath = "github.com/pmezard/go-difflib",
-    commit = "792786c7400a136282c1664665ae0a8db921c6c2",
+    tag = "v1.0.0",
 )
 
 new_go_repository(
     name = "com_github_davecgh_go_spew",
     importpath = "github.com/davecgh/go-spew",
-    commit = "346938d642f2ec3594ed81d874461961cd0faa76",
+    tag = "v1.1.0",
 )
