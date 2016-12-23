@@ -1,12 +1,10 @@
-load("@io_bazel_rules_go//proto:go_proto_library.bzl", "go_proto_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
-go_proto_library(
+go_library(
     name = "go_default_library",
-    srcs = ["worker.proto"],
+    srcs = ["bazel.go"],
     deps = [
         "//proto/workspace:go_default_library",
     ],
     visibility = ["//visibility:public"],
-    has_services = 1,
 )
-

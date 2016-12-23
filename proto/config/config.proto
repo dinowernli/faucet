@@ -2,28 +2,15 @@ syntax = "proto3";
 
 package faucet.config;
 
+import "proto/workspace/workspace.proto";
+
 // The configuration used by coordinators.
 message Configuration {
   // The workers available in the system.
   repeated Worker workers = 1;
 
   // A set of Bazel workspaces keyed by name.
-  map<string, Workspace> workspaces = 2;
-}
-
-// A Bazel workspace.
-message Workspace {
-  Repository repository = 1;
-}
-
-message Repository {
-  oneof repo {
-    GitRepository git_repository = 1;
-  }
-}
-
-// A version control respository backed by git.
-message GitRepository {
+  map<string, faucet.workspace.Workspace> workspaces = 2;
 }
 
 // Points to a worker capable of executing builds.

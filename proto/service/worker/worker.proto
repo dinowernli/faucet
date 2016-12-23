@@ -2,13 +2,66 @@ syntax = "proto3";
 
 package faucet.service.worker;
 
+import "proto/workspace/workspace.proto";
+
+// A request for the overall status of this worker.
 message StatusRequest {
 }
 
 message StatusResponse {
   bool healthy = 1;
+  int32 queue_size = 2;
+}
+
+// The current state of a requested execution.
+message ExecutionStatus {
+  message Progress {
+    oneof state {
+      Queued queued = 1;
+      Running running = 2;
+      Finished finished = 3;
+    }
+  }
+
+  // The execution is currently sitting in the queue.
+  message Queued {
+    // The position of this execution in the queue.
+    int32 position = 1;
+  }
+  
+  // The execution is currently running.
+  message Running {}
+
+  // The execution has terminated.
+  message Finished {}
+}
+
+// A request to execute a build.
+message ExecutionRequest {
+  // The exact state of a repository to use for this execution.
+  faucet.workspace.Checkout checkout = 1;
+
+  // The Bazel targets to execute.
+  repeated Target targets = 2;
+  
+  // A Bazel target. The exact semantics of what it means to execute a target
+  // depends on its "kind". For instance, test targets are handled differently
+  // from non-test targets.
+  message Target {
+    // The absolute path to the target, e.g., "//foo/bar:baz".
+    string path = 1;
+  }
+}
+
+message ExecutionResponse {
+  ExecutionStatus execution_status = 1;
 }
 
 service Worker {
   rpc Status (StatusRequest) returns (StatusResponse);
+
+  // After requesting, multiple instance of ExecutionResponse are streamed to
+  // the caller. The stream ends with the first ExecutionResponse containing a
+  // status of type "Finished".
+  rpc Execute (ExecutionRequest) returns (stream ExecutionResponse);
 }
