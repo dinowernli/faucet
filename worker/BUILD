@@ -15,12 +15,3 @@ go_library(
     visibility = ["//visibility:public"],
 )
 
-go_test(
-    name = "go_default_test",
-    size = "small",
-    srcs = glob(["*_test.go"]),
-    deps = [
-        "@org_github_stretchr_testify//assert:go_default_library",
-    ],
-    library = ":go_default_library",
-)

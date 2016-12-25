@@ -14,9 +14,10 @@ go_library(
 go_test(
     name = "go_default_test",
     size = "small",
-    srcs = ["scheduler_test.go"],
+    srcs = glob(["*_test.go"]),
     deps = [
-        "@org_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//mock:go_default_library",
     ],
     library = ":go_default_library",
 )

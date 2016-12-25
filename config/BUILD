@@ -16,7 +16,7 @@ go_test(
     size = "small",
     srcs = ["loader_test.go"],
     deps = [
-        "@org_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
     ],
     library = ":go_default_library",
 )
