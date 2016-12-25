@@ -11,6 +11,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 // Coordinator represents an agent in the system which implements the faucet
@@ -79,10 +80,15 @@ func (c *Coordinator) pollStatus(address string, done chan (bool)) {
 type coordinatorService struct {
 }
 
-func (s *coordinatorService) ValidateChange(context.Context, *pb_coordinator.ChangeValidationRequest) (*pb_coordinator.ChangeValidationResponse, error) {
-	return nil, nil
+func (s *coordinatorService) Check(context.Context, *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
+	// TODO(dino): Make up a check id, create a record for the check id.
+	// TODO(dino): Look at the repository at the requested revision, work out what need to be tested.
+	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
+	// TODO(dino): Return the check id to the caller.
+	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
 }
 
-func (s *coordinatorService) GetValidationStatus(context.Context, *pb_coordinator.ValidationStatusRequest) (*pb_coordinator.ValidationStatusResponse, error) {
-	return nil, nil
+func (s *coordinatorService) GetStatus(context.Context, *pb_coordinator.StatusRequest) (*pb_coordinator.StatusResponse, error) {
+	// TODO(dino): Lookup the requested check id
+	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
 }
