@@ -35,12 +35,22 @@ func (s *workerService) Status(context context.Context, request *pb_worker.Statu
 func (s *workerService) Execute(request *pb_worker.ExecutionRequest, stream pb_worker.Worker_ExecuteServer) error {
 	_ = bazel.NewClient(request.Checkout.Workspace)
 
-	_, err := s.scheduler.Schedule(request)
+	out, err := s.scheduler.Schedule(request)
 	if err != nil {
 		return grpc.Errorf(codes.Internal, "Unable to schedule execution request: %v", err)
 	}
 
-	// TODO(dino): Listen on the channel for updates and propagate them to the claler stream.
+	// Listen for updates from the scheduler and send them to the caller.
+	for status := range out {
+		response := &pb_worker.ExecutionResponse{
+			ExecutionStatus: createStatusProto(status),
+		}
+		stream.SendMsg(response)
+	}
 
 	return nil
+}
+
+func createStatusProto(status scheduler.TaskStatus) *pb_worker.ExecutionStatus {
+	return &pb_worker.ExecutionStatus{}
 }
