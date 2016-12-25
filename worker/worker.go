@@ -49,5 +49,6 @@ func (s *workerService) Execute(request *pb_worker.ExecutionRequest, stream pb_w
 }
 
 func createStatusProto(status scheduler.TaskStatus) *pb_worker.ExecutionStatus {
+	// TODO(dino): Finalize the status proto and implement this.
 	return &pb_worker.ExecutionStatus{}
 }
