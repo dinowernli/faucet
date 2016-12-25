@@ -4,7 +4,6 @@ go_library(
     name = "go_default_library",
     srcs = ["worker.go"],
     deps = [
-        "//bazel:go_default_library",
         "//proto/service/worker:go_default_library",
         "//proto/workspace:go_default_library",
         "//worker/scheduler:go_default_library",

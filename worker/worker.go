@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"dinowernli.me/faucet/bazel"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 	"dinowernli.me/faucet/worker/scheduler"
 
@@ -33,8 +32,6 @@ func (s *workerService) Status(context context.Context, request *pb_worker.Statu
 }
 
 func (s *workerService) Execute(request *pb_worker.ExecutionRequest, stream pb_worker.Worker_ExecuteServer) error {
-	_ = bazel.NewClient(request.Checkout.Workspace)
-
 	out, err := s.scheduler.Schedule(request)
 	if err != nil {
 		return grpc.Errorf(codes.Internal, "Unable to schedule execution request: %v", err)

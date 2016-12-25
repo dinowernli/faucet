@@ -2,9 +2,9 @@ package scheduler
 
 import (
 	"fmt"
-	"time"
 
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
+	"dinowernli.me/faucet/worker/bazel"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -32,18 +32,19 @@ type Scheduler interface {
 func New(logger *logrus.Logger) Scheduler {
 	return &scheduler{
 		logger: logger,
-		queue:  make(chan task, queueCapacity),
+		bazel:  bazel.NewClient(logger),
+		queue:  make(chan *task, queueCapacity),
 	}
 }
 
 type scheduler struct {
 	logger *logrus.Logger
-	queue  chan task
+	bazel  bazel.Client
+	queue  chan *task
 }
 
 func (s *scheduler) Schedule(request *pb_worker.ExecutionRequest) (chan TaskStatus, error) {
-	task := task{
-		logger:        s.logger,
+	task := &task{
 		request:       request,
 		statusChannel: make(chan TaskStatus),
 	}
@@ -64,24 +65,27 @@ func (s *scheduler) QueueSize() int {
 func (s *scheduler) start() {
 	go func() {
 		for task := range s.queue {
-			task.execute()
+			s.execute(task)
 		}
 	}()
 	s.logger.Infof("Started scheduling consumer loop")
 }
 
-type task struct {
-	logger        *logrus.Logger
-	request       *pb_worker.ExecutionRequest
-	statusChannel chan TaskStatus
+func (s *scheduler) execute(task *task) {
+	task.statusChannel <- StatusRunning
+
+	paths := []string{}
+	for _, target := range task.request.Targets {
+		paths = append(paths, target.Path)
+	}
+	s.bazel.Run(paths)
+
+	// TODO(dino): Handle build failures.
+
+	task.statusChannel <- StatusFinished
 }
 
-func (t *task) execute() {
-	t.statusChannel <- StatusRunning
-
-	// TODO(dino): Use a bazel client to do something useful here.
-	t.logger.Infof("Fake executing build...")
-	time.Sleep(time.Second * 3)
-
-	t.statusChannel <- StatusFinished
+type task struct {
+	request       *pb_worker.ExecutionRequest
+	statusChannel chan TaskStatus
 }

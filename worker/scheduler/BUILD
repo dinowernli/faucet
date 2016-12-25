@@ -5,6 +5,7 @@ go_library(
     srcs = ["scheduler.go"],
     deps = [
         "//proto/service/worker:go_default_library",
+        "//worker/bazel:go_default_library",
         "@com_github_sirupsen_logrus//:go_default_library",
     ],
     visibility = ["//visibility:public"],
