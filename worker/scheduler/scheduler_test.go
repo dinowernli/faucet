@@ -46,7 +46,7 @@ func TestStatusUpdates(t *testing.T) {
 
 func createScheduler() *scheduler {
 	mockBazelClient := &mockBazelClient{}
-	mockBazelClient.On("Run").Return(nil)
+	mockBazelClient.On("Run", mock.Anything).Return(nil)
 
 	return &scheduler{
 		logger: logrus.New(),
