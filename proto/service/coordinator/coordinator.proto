@@ -4,9 +4,8 @@ package faucet.service.coordinator;
 
 // A request to asynchronously perform the necessary checks for a change.
 message CheckRequest {
-  string workspace = 1;
-
-  // TODO(dino): Add changeset.
+  string workspace_name = 1;
+  string git_commit = 2;
 }
 
 message CheckResponse {
