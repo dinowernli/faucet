@@ -8,6 +8,7 @@ import (
 
 	pb_config "dinowernli.me/faucet/proto/config"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +33,7 @@ func TestLoader_InitialCallback(t *testing.T) {
 }
 
 func createLoader(t *testing.T, filename string) Loader {
-	loader, err := NewLoader(filename, time.Millisecond*100)
+	loader, err := newLoader(logrus.New(), filename, time.Millisecond*100)
 	assert.NoError(t, err, "Unable to create config loader")
 	return loader
 }

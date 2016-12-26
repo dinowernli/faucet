@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"time"
 
 	"dinowernli.me/faucet/config"
 	"dinowernli.me/faucet/coordinator"
@@ -23,11 +22,6 @@ const (
 	configFilePath = "demo/config.json"
 )
 
-var (
-	// TODO(dino): Use flags for these.
-	configFilePollFrequency = time.Second * 3
-)
-
 func main() {
 	logger := logrus.New()
 	logger.Out = os.Stderr
@@ -35,11 +29,11 @@ func main() {
 	worker := worker.New(logger)
 	logger.Infof("Created worker")
 
-	loader, err := config.NewLoader(configFilePath, configFilePollFrequency)
+	config, err := config.ForFile(logger, configFilePath)
 	if err != nil {
-		logger.Fatalf("Unable to create config loader for path [%s]: %v", configFilePath, err)
+		logger.Fatalf("Unable to create config for path [%s]: %v", configFilePath, err)
 	}
-	coordinator := coordinator.New(logger, loader)
+	coordinator := coordinator.New(logger, config)
 	logger.Infof("Created coordinator")
 
 	go coordinator.Start()

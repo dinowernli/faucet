@@ -2,11 +2,12 @@ package config
 
 import (
 	"io/ioutil"
-	"log"
 	"sync"
 	"time"
 
 	pb_config "dinowernli.me/faucet/proto/config"
+
+	"github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 )
@@ -23,14 +24,15 @@ type Loader interface {
 	Listen(callback)
 }
 
-// NewLoader creates a loader which watches a config file.
-func NewLoader(filepath string, pollFrequency time.Duration) (Loader, error) {
+// newLoader creates a loader which watches a config file.
+func newLoader(logger *logrus.Logger, filepath string, pollFrequency time.Duration) (Loader, error) {
 	initialConfig, err := readFile(filepath)
 	if err != nil {
 		return nil, err
 	}
 
 	result := &loader{
+		logger:        logger,
 		pollFrequency: pollFrequency,
 		config:        initialConfig,
 		configLock:    &sync.Mutex{},
@@ -45,6 +47,7 @@ func NewLoader(filepath string, pollFrequency time.Duration) (Loader, error) {
 }
 
 type loader struct {
+	logger        *logrus.Logger
 	pollFrequency time.Duration
 	config        *pb_config.Configuration
 	configLock    *sync.Mutex
@@ -95,14 +98,12 @@ func (l *loader) pollFile(filepath string) {
 	for _ = range ticker.C {
 		config, err := readFile(filepath)
 		if err != nil {
-			// TODO(dino): Use a proper logger and warn here.
-			log.Printf("Polling file [%s] failed: %v", filepath, err)
+			l.logger.Warnf("Polling file [%s] failed: %v", filepath, err)
 			continue
 		}
 
 		if l.updateConfig(config) {
-			// TODO(dino): Use a proper logger.
-			log.Printf("Updated config")
+			l.logger.Infof("Updated config")
 			for _, cb := range l.callbacksSnapshot() {
 				cb(config)
 			}
