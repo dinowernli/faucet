@@ -31,7 +31,7 @@ func main() {
 	logger := logrus.New()
 	logger.Out = os.Stderr
 
-	worker := worker.New()
+	worker := worker.New(logger)
 	logger.Infof("Created worker")
 
 	loader, err := config.NewLoader(configFilePath, configFilePollFrequency)

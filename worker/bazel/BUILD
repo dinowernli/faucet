@@ -5,6 +5,7 @@ go_library(
     srcs = ["bazel.go"],
     deps = [
         "//proto/workspace:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
     ],
     visibility = ["//visibility:public"],
 )

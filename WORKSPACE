@@ -40,7 +40,13 @@ new_go_repository(
 )
 
 new_go_repository(
-    name = "org_github_stretchr_testify",
+    name = "com_github_stretchr_objx",
+    importpath = "github.com/stretchr/objx",
+    commit = "1a9d0bb9f541897e62256577b352fdbc1fb4fd94",
+)
+
+new_go_repository(
+    name = "com_github_stretchr_testify",
     importpath = "github.com/stretchr/testify",
     tag = "v1.1.3",
 )
