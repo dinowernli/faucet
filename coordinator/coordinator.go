@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"dinowernli.me/faucet/config"
+	"dinowernli.me/faucet/coordinator/storage"
 	pb_coordinator "dinowernli.me/faucet/proto/service/coordinator"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 
@@ -30,9 +31,12 @@ type Coordinator struct {
 // New creates a new coordinator, and is otherwise side-effect free.
 func New(logger *logrus.Logger, config config.Config) *Coordinator {
 	return &Coordinator{
-		Service: &coordinatorService{},
-		config:  config,
-		logger:  logger,
+		Service: &coordinatorService{
+			logger:  logger,
+			storage: storage.NewInMemory(),
+		},
+		config: config,
+		logger: logger,
 	}
 }
 
@@ -76,17 +80,25 @@ func (c *Coordinator) checkWorker(address string) {
 }
 
 type coordinatorService struct {
+	logger  *logrus.Logger
+	storage storage.Storage
 }
 
 func (s *coordinatorService) Check(context.Context, *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
-	// TODO(dino): Make up a check id, create a record for the check id.
+	// TODO(dino): Make up a check id, create a record for the check id, add it to storage.
 	// TODO(dino): Look at the repository at the requested revision, work out what need to be tested.
 	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
 	// TODO(dino): Return the check id to the caller.
 	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
 }
 
-func (s *coordinatorService) GetStatus(context.Context, *pb_coordinator.StatusRequest) (*pb_coordinator.StatusResponse, error) {
-	// TODO(dino): Lookup the requested check id
-	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
+func (s *coordinatorService) GetStatus(ctx context.Context, request *pb_coordinator.StatusRequest) (*pb_coordinator.StatusResponse, error) {
+	_, err := s.storage.Get(request.CheckId)
+	if err != nil {
+		s.logger.Errorf("Unable to load record with id [%s]: %v", request.CheckId, err)
+		return nil, err
+	}
+
+	// TODO(dino): Actually use the record to populate the status response.
+	return &pb_coordinator.StatusResponse{}, nil
 }

@@ -5,6 +5,7 @@ go_library(
     srcs = ["coordinator.go"],
     deps = [
         "//config:go_default_library",
+        "//coordinator/storage:go_default_library",
         "//proto/config:go_default_library",
         "//proto/service/coordinator:go_default_library",
         "//proto/service/worker:go_default_library",
