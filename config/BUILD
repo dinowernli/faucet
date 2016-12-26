@@ -2,11 +2,12 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["loader.go"],
+    srcs = ["config.go", "loader.go"],
     deps = [
         "//proto/config:go_default_library",
         "@com_github_golang_protobuf//jsonpb:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
     ],
     visibility = ["//visibility:public"],
 )

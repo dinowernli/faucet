@@ -2,10 +2,10 @@ package coordinator
 
 import (
 	"fmt"
+	"time"
 
 	"dinowernli.me/faucet/config"
 	"dinowernli.me/faucet/coordinator/storage"
-	pb_config "dinowernli.me/faucet/proto/config"
 	pb_coordinator "dinowernli.me/faucet/proto/service/coordinator"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 
@@ -15,70 +15,68 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+const (
+	workerPollFrequency = time.Second * 2
+)
+
 // Coordinator represents an agent in the system which implements the faucet
 // coordinator service. The coordinator uses faucet workers it knows of in
 // order to make sure builds get executed.
 type Coordinator struct {
-	Service      *coordinatorService
-	logger       *logrus.Logger
-	configLoader config.Loader
+	Service *coordinatorService
+	config  config.Config
+	logger  *logrus.Logger
 }
 
 // New creates a new coordinator, and is otherwise side-effect free.
-func New(logger *logrus.Logger, configLoader config.Loader) *Coordinator {
+func New(logger *logrus.Logger, config config.Config) *Coordinator {
 	return &Coordinator{
 		Service: &coordinatorService{
 			logger:  logger,
 			storage: storage.NewInMemory(),
 		},
-		logger:       logger,
-		configLoader: configLoader,
+		config: config,
+		logger: logger,
 	}
 }
 
 func (c *Coordinator) Start() {
 	c.logger.Infof("Starting coordinator")
 
-	// TODO(dino): Make the config a field and set up atomic updates.
-	var config *pb_config.Configuration
-	c.configLoader.Listen(func(c *pb_config.Configuration) {
-		config = c
-	})
-
-	c.logger.Infof("Using config: %v", config)
-
-	done := make(chan bool)
-	for _, worker := range config.Workers {
-		go c.pollStatus(fmt.Sprintf("%v:%v", worker.GrpcHost, worker.GrpcPort), done)
-	}
-	for _, _ = range config.Workers {
-		<-done
-	}
+	// Set up a periodic health check for all known workers.
+	go func() {
+		pollTicker := time.NewTicker(workerPollFrequency)
+		for _ = range pollTicker.C {
+			for _, worker := range c.config.Proto().Workers {
+				c.checkWorker(fmt.Sprintf("%v:%v", worker.GrpcHost, worker.GrpcPort))
+			}
+		}
+	}()
 }
 
-func (c *Coordinator) pollStatus(address string, done chan (bool)) {
-	c.logger.Infof("Starting to poll address: %s", address)
-
+func (c *Coordinator) checkWorker(address string) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
 
 	connection, err := grpc.Dial(address, opts...)
 	if err != nil {
-		c.logger.Fatalf("Failed to connect to %s: %v", address, err)
+		c.logger.Errorf("Failed to connect to %s: %v", address, err)
+		return
 	}
-
-	c.logger.Infof("Successfully dialed: %s", address)
 	defer connection.Close()
 
 	client := pb_worker.NewWorkerClient(connection)
 	response, err := client.Status(context.TODO(), &pb_worker.StatusRequest{})
 	if err != nil {
-		c.logger.Fatalf("Failed to retrieve status: %v", err)
+		c.logger.Errorf("Failed to retrieve status: %v", err)
+		return
 	}
 
-	c.logger.Infof("Got response: %v", response)
-
-	done <- true
+	health := "healthy"
+	if !response.Healthy {
+		health = "unhealthy"
+	}
+	c.logger.Infof("Worker at [%s]: [%s]", address, health)
 }
 
 type coordinatorService struct {
