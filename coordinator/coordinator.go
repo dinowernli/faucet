@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"dinowernli.me/faucet/config"
+	"dinowernli.me/faucet/coordinator/storage"
 	pb_config "dinowernli.me/faucet/proto/config"
 	pb_coordinator "dinowernli.me/faucet/proto/service/coordinator"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
@@ -26,7 +27,7 @@ type Coordinator struct {
 // New creates a new coordinator, and is otherwise side-effect free.
 func New(logger *logrus.Logger, configLoader config.Loader) *Coordinator {
 	return &Coordinator{
-		Service:      &coordinatorService{},
+		Service:      &coordinatorService{storage: storage.NewInMemory()},
 		logger:       logger,
 		configLoader: configLoader,
 	}
@@ -78,10 +79,11 @@ func (c *Coordinator) pollStatus(address string, done chan (bool)) {
 }
 
 type coordinatorService struct {
+	storage storage.Storage
 }
 
 func (s *coordinatorService) Check(context.Context, *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
-	// TODO(dino): Make up a check id, create a record for the check id.
+	// TODO(dino): Make up a check id, create a record for the check id, add it to storage.
 	// TODO(dino): Look at the repository at the requested revision, work out what need to be tested.
 	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
 	// TODO(dino): Return the check id to the caller.
