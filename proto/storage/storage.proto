@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package faucet.storage;
+
+// Holds stored information about a single Faucet check.
+message CheckRecord {
+  // A globally unique, opaque id.
+  string id = 1;
+}
+
