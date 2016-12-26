@@ -27,7 +27,10 @@ type Coordinator struct {
 // New creates a new coordinator, and is otherwise side-effect free.
 func New(logger *logrus.Logger, configLoader config.Loader) *Coordinator {
 	return &Coordinator{
-		Service:      &coordinatorService{storage: storage.NewInMemory()},
+		Service: &coordinatorService{
+			logger:  logger,
+			storage: storage.NewInMemory(),
+		},
 		logger:       logger,
 		configLoader: configLoader,
 	}
@@ -79,6 +82,7 @@ func (c *Coordinator) pollStatus(address string, done chan (bool)) {
 }
 
 type coordinatorService struct {
+	logger  *logrus.Logger
 	storage storage.Storage
 }
 
@@ -90,7 +94,13 @@ func (s *coordinatorService) Check(context.Context, *pb_coordinator.CheckRequest
 	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
 }
 
-func (s *coordinatorService) GetStatus(context.Context, *pb_coordinator.StatusRequest) (*pb_coordinator.StatusResponse, error) {
-	// TODO(dino): Lookup the requested check id
-	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
+func (s *coordinatorService) GetStatus(ctx context.Context, request *pb_coordinator.StatusRequest) (*pb_coordinator.StatusResponse, error) {
+	_, err := s.storage.Get(request.CheckId)
+	if err != nil {
+		s.logger.Errorf("Unable to load record with id [%s]: %v", request.CheckId, err)
+		return nil, err
+	}
+
+	// TODO(dino): Actually use the record to populate the status response.
+	return &pb_coordinator.StatusResponse{}, nil
 }
