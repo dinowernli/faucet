@@ -15,11 +15,13 @@ import (
 )
 
 const (
+	// TODO(dino): Check for the existence of the binaries, allow overriding.
 	bazelBinary = "bazel"
 	gitBinary   = "git"
 )
 
 var (
+	// TODO(dino): Make this more robust.
 	workspaceNameRegex = regexp.MustCompile("workspace\\(name = \"([a-z_]+)\"\\)")
 )
 
@@ -28,6 +30,9 @@ func main() {
 	logger.Out = os.Stderr
 
 	// TODO(dino): Check that there are no uncommited changes.
+	// TODO(dino): Have better messaging around common cases, e.g.,:
+	// - No workspace
+	// - Workspace without workspace_name declaration
 
 	commitHash, err := getCommitHash()
 	if err != nil {
