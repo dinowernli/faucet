@@ -7,7 +7,7 @@ Coming soon...
 Headlines:
 * CI system with tight Bazel integration
 * Supports decoupling coordination of builds from execution on a fleet of workers (using gRPC)
-* Configuration used to decide how/which tests to run lives inside the repository.
+* Configuration used to decide how/which tests to run lives inside the repository (rather than in the CI system)
 
 ## How to build
 
