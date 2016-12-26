@@ -57,6 +57,7 @@ func (c *Coordinator) checkWorker(address string) {
 	connection, err := grpc.Dial(address, opts...)
 	if err != nil {
 		c.logger.Errorf("Failed to connect to %s: %v", address, err)
+		return
 	}
 	defer connection.Close()
 
@@ -64,6 +65,7 @@ func (c *Coordinator) checkWorker(address string) {
 	response, err := client.Status(context.TODO(), &pb_worker.StatusRequest{})
 	if err != nil {
 		c.logger.Errorf("Failed to retrieve status: %v", err)
+		return
 	}
 
 	health := "healthy"

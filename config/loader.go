@@ -22,6 +22,8 @@ type Loader interface {
 	// get executed concurrently with itself, but might get executed on different
 	// goroutines over time.
 	Listen(callback)
+
+	Config
 }
 
 // newLoader creates a loader which watches a config file.
@@ -55,20 +57,21 @@ type loader struct {
 	callbacksLock *sync.Mutex
 }
 
+func (l *loader) Proto() *pb_config.Configuration {
+	// TODO(dino): Use RW-lock or atomic update here.
+	l.configLock.Lock()
+	defer l.configLock.Unlock()
+	return l.config
+}
+
 func (l *loader) Listen(cb callback) {
-	cb(l.currentConfig())
+	cb(l.Proto())
 
 	// Only add the callback to the list once it's done executing to make sure
 	// it doesn't get executed concurrently by the polling goroutine.
 	l.callbacksLock.Lock()
 	defer l.callbacksLock.Unlock()
 	l.callbacks = append(l.callbacks, cb)
-}
-
-func (l *loader) currentConfig() *pb_config.Configuration {
-	l.configLock.Lock()
-	defer l.configLock.Unlock()
-	return l.config
 }
 
 // updateConfig sets the current config. Returns true if the new config is
