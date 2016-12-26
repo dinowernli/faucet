@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package faucet.service.coordinator;
+
+// A request to asynchronously perform the necessary checks for a change.
+message CheckRequest {
+  string workspace = 1;
+
+  // TODO(dino): Add changeset.
+}
+
+message CheckResponse {
+  // A unique identifier for the ongoing check.
+  string check_id = 1;
+}
+
+// A request for the status of a previously started check.
+message StatusRequest {
+  string check_id = 1;
+}
+
+message StatusResponse {
+}
+
+service Coordinator {
+  rpc Check (CheckRequest) returns (CheckResponse);
+  rpc GetStatus (StatusRequest) returns (StatusResponse);
+}

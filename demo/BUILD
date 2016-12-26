@@ -7,6 +7,7 @@ go_binary(
         "//config:go_default_library",
         "//coordinator:go_default_library",
         "//proto/config:go_default_library",
+        "//proto/service/coordinator:go_default_library",
         "//proto/service/worker:go_default_library",
         "//worker:go_default_library",
         "@org_golang_google_grpc//:go_default_library",

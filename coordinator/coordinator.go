@@ -5,24 +5,31 @@ import (
 
 	"dinowernli.me/faucet/config"
 	pb_config "dinowernli.me/faucet/proto/config"
+	pb_coordinator "dinowernli.me/faucet/proto/service/coordinator"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 // Coordinator represents an agent in the system which implements the faucet
 // coordinator service. The coordinator uses faucet workers it knows of in
 // order to make sure builds get executed.
 type Coordinator struct {
+	Service      *coordinatorService
 	logger       *logrus.Logger
 	configLoader config.Loader
 }
 
 // New creates a new coordinator, and is otherwise side-effect free.
 func New(logger *logrus.Logger, configLoader config.Loader) *Coordinator {
-	return &Coordinator{logger: logger, configLoader: configLoader}
+	return &Coordinator{
+		Service:      &coordinatorService{},
+		logger:       logger,
+		configLoader: configLoader,
+	}
 }
 
 func (c *Coordinator) Start() {
@@ -68,4 +75,20 @@ func (c *Coordinator) pollStatus(address string, done chan (bool)) {
 	c.logger.Infof("Got response: %v", response)
 
 	done <- true
+}
+
+type coordinatorService struct {
+}
+
+func (s *coordinatorService) Check(context.Context, *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
+	// TODO(dino): Make up a check id, create a record for the check id.
+	// TODO(dino): Look at the repository at the requested revision, work out what need to be tested.
+	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
+	// TODO(dino): Return the check id to the caller.
+	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
+}
+
+func (s *coordinatorService) GetStatus(context.Context, *pb_coordinator.StatusRequest) (*pb_coordinator.StatusResponse, error) {
+	// TODO(dino): Lookup the requested check id
+	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
 }
