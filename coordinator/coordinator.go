@@ -6,6 +6,7 @@ import (
 
 	"dinowernli.me/faucet/config"
 	"dinowernli.me/faucet/coordinator/storage"
+	pb_config "dinowernli.me/faucet/proto/config"
 	pb_coordinator "dinowernli.me/faucet/proto/service/coordinator"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 
@@ -28,6 +29,12 @@ type Coordinator struct {
 	logger  *logrus.Logger
 }
 
+// workerStatus is the type used by the coordinator to keep track of a worker.
+// The coordinator maintain a status object for every worker in the config, but
+// might decide not to send any traffic to a worker because it is unhealthy.
+type workerStatus struct {
+}
+
 // New creates a new coordinator, and is otherwise side-effect free.
 func New(logger *logrus.Logger, config config.Config) *Coordinator {
 	return &Coordinator{
@@ -47,14 +54,19 @@ func (c *Coordinator) Start() {
 	go func() {
 		pollTicker := time.NewTicker(workerPollFrequency)
 		for _ = range pollTicker.C {
-			for _, worker := range c.config.Proto().Workers {
-				c.checkWorker(fmt.Sprintf("%v:%v", worker.GrpcHost, worker.GrpcPort))
+			for _, workerProto := range c.config.Proto().Workers {
+				c.checkWorker(workerProto)
 			}
 		}
 	}()
 }
 
-func (c *Coordinator) checkWorker(address string) {
+func workerAddress(proto *pb_config.Worker) string {
+	return fmt.Sprintf("%v:%v", proto.GrpcHost, proto.GrpcPort)
+}
+
+func (c *Coordinator) checkWorker(proto *pb_config.Worker) {
+	address := workerAddress(proto)
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
 
