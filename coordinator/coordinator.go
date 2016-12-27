@@ -24,9 +24,9 @@ const (
 // coordinator service. The coordinator uses faucet workers it knows of in
 // order to make sure builds get executed.
 type Coordinator struct {
-	Service *coordinatorService
 	config  config.Config
 	logger  *logrus.Logger
+	storage storage.Storage
 }
 
 // workerStatus is the type used by the coordinator to keep track of a worker.
@@ -38,12 +38,9 @@ type workerStatus struct {
 // New creates a new coordinator, and is otherwise side-effect free.
 func New(logger *logrus.Logger, config config.Config) *Coordinator {
 	return &Coordinator{
-		Service: &coordinatorService{
-			logger:  logger,
-			storage: storage.NewInMemory(),
-		},
-		config: config,
-		logger: logger,
+		config:  config,
+		logger:  logger,
+		storage: storage.NewInMemory(),
 	}
 }
 
@@ -61,8 +58,23 @@ func (c *Coordinator) Start() {
 	}()
 }
 
-func workerAddress(proto *pb_config.Worker) string {
-	return fmt.Sprintf("%v:%v", proto.GrpcHost, proto.GrpcPort)
+func (s *Coordinator) Check(context.Context, *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
+	// TODO(dino): Make up a check id, create a record for the check id, add it to storage.
+	// TODO(dino): Look at the repository at the requested revision, work out what need to be tested.
+	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
+	// TODO(dino): Return the check id to the caller.
+	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
+}
+
+func (s *Coordinator) GetStatus(ctx context.Context, request *pb_coordinator.StatusRequest) (*pb_coordinator.StatusResponse, error) {
+	_, err := s.storage.Get(request.CheckId)
+	if err != nil {
+		s.logger.Errorf("Unable to load record with id [%s]: %v", request.CheckId, err)
+		return nil, err
+	}
+
+	// TODO(dino): Actually use the record to populate the status response.
+	return &pb_coordinator.StatusResponse{}, nil
 }
 
 func (c *Coordinator) checkWorker(proto *pb_config.Worker) {
@@ -91,26 +103,6 @@ func (c *Coordinator) checkWorker(proto *pb_config.Worker) {
 	c.logger.Infof("Worker at [%s]: [%s]", address, health)
 }
 
-type coordinatorService struct {
-	logger  *logrus.Logger
-	storage storage.Storage
-}
-
-func (s *coordinatorService) Check(context.Context, *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
-	// TODO(dino): Make up a check id, create a record for the check id, add it to storage.
-	// TODO(dino): Look at the repository at the requested revision, work out what need to be tested.
-	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
-	// TODO(dino): Return the check id to the caller.
-	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
-}
-
-func (s *coordinatorService) GetStatus(ctx context.Context, request *pb_coordinator.StatusRequest) (*pb_coordinator.StatusResponse, error) {
-	_, err := s.storage.Get(request.CheckId)
-	if err != nil {
-		s.logger.Errorf("Unable to load record with id [%s]: %v", request.CheckId, err)
-		return nil, err
-	}
-
-	// TODO(dino): Actually use the record to populate the status response.
-	return &pb_coordinator.StatusResponse{}, nil
+func workerAddress(proto *pb_config.Worker) string {
+	return fmt.Sprintf("%v:%v", proto.GrpcHost, proto.GrpcPort)
 }

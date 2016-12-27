@@ -52,7 +52,7 @@ func startServer(logger *logrus.Logger, worker *worker.Worker, coordinator *coor
 	pb_worker.RegisterWorkerServer(server, worker.Service)
 	logger.Infof("Registered worker service")
 
-	pb_coordinator.RegisterCoordinatorServer(server, coordinator.Service)
+	pb_coordinator.RegisterCoordinatorServer(server, coordinator)
 	logger.Infof("Registered coordinator service")
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%v", workerPort))
