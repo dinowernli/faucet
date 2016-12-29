@@ -2,15 +2,10 @@ syntax = "proto3";
 
 package faucet.config;
 
-import "proto/workspace/workspace.proto";
-
 // The configuration used by coordinators.
 message Configuration {
   // The workers available in the system.
   repeated Worker workers = 1;
-
-  // A set of Bazel workspaces keyed by name.
-  map<string, faucet.workspace.Workspace> workspaces = 2;
 }
 
 // Points to a worker capable of executing builds.

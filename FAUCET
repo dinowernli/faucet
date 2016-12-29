@@ -1,0 +1,6 @@
+{
+  "git_repo": {
+    "repo_url": "git@github.com:dinowernli/faucet.git",
+    "target_branch": "master"
+  }
+}

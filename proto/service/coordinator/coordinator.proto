@@ -2,10 +2,11 @@ syntax = "proto3";
 
 package faucet.service.coordinator;
 
+import "proto/workspace/workspace.proto";
+
 // A request to asynchronously perform the necessary checks for a change.
 message CheckRequest {
-  string workspace_name = 1;
-  string git_commit = 2;
+  faucet.workspace.Checkout checkout = 1;
 }
 
 message CheckResponse {

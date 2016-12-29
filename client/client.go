@@ -1,87 +1,118 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 
+	pb_client "dinowernli.me/faucet/proto/client"
 	pb_coordinator "dinowernli.me/faucet/proto/service/coordinator"
+	pb_workspace "dinowernli.me/faucet/proto/workspace"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/golang/protobuf/jsonpb"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 const (
 	// TODO(dino): Check for the existence of the binaries, allow overriding.
-	bazelBinary = "bazel"
-	gitBinary   = "git"
+	gitBinary            = "git"
+	repoMetadataFilename = "FAUCET"
 )
 
 var (
-	// TODO(dino): Make this more robust.
-	workspaceNameRegex = regexp.MustCompile("workspace\\(name = \"([a-z_]+)\"\\)")
+	flagCoordinator = flag.String("coordinator", "localhost:12345", "the grpc endpoint of the coordinator")
 )
 
 func main() {
 	logger := logrus.New()
 	logger.Out = os.Stderr
 
+	logger.Infof("Using coordinator: %s", *flagCoordinator)
+
 	// TODO(dino): Check that there are no uncommited changes.
-	// TODO(dino): Have better messaging around common cases, e.g.,:
-	// - No workspace
-	// - Workspace without workspace_name declaration
+	// TODO(dino): Have better messaging around common failure cases
+
+	repoRoot, err := getRepoRoot()
+	if err != nil {
+		logger.Errorf("Unable to get repository root: %v", err)
+		return
+	}
+	logger.Infof("Using repository root: %s", repoRoot)
+
+	repoMeta, err := getRepoMetadata(repoRoot)
+	if err != nil {
+		logger.Errorf("Unable to get repository metadata: %v", err)
+		return
+	}
+	logger.Infof("Using repository metadata: %s", repoMeta)
 
 	commitHash, err := getCommitHash()
 	if err != nil {
 		logger.Errorf("Unable to get commit hash: %v", err)
 		return
 	}
-
-	workspaceName, err := getWorkspaceName()
-	if err != nil {
-		logger.Errorf("Unable to get workspace name: %v", err)
-		return
+	logger.Infof("Using commit hash: %s", commitHash)
+	revision := &pb_workspace.Revision{
+		&pb_workspace.Revision_GitRevision_{
+			GitRevision: &pb_workspace.Revision_GitRevision{
+				CommitHash: commitHash,
+			},
+		},
 	}
 
 	request := &pb_coordinator.CheckRequest{
-		WorkspaceName: workspaceName,
-		GitCommit:     commitHash,
+		Checkout: &pb_workspace.Checkout{
+			Revision: revision,
+		},
 	}
 	logger.Infof("Request: %v", request)
+
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithInsecure())
+
+	connection, err := grpc.Dial(*flagCoordinator, opts...)
+	if err != nil {
+		logger.Errorf("Failed to connect to %s: %v", *flagCoordinator, err)
+		return
+	}
+	defer connection.Close()
+
+	client := pb_coordinator.NewCoordinatorClient(connection)
+	response, err := client.Check(context.TODO(), &pb_coordinator.CheckRequest{})
+	if err != nil {
+		logger.Errorf("Failed to retrieve status: %v", err)
+		return
+	}
+
+	logger.Infof("Got response: %v", response)
 }
 
-func getWorkspaceName() (string, error) {
-	// Find the workspace root.
-	workspacePath, err := getWorkspacePath()
+func getRepoMetadata(repoRoot string) (*pb_client.RepositoryMetadata, error) {
+	filename := filepath.Join(repoRoot, repoMetadataFilename)
+	fileBytes, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return "", fmt.Errorf("Unable to get workspace path: %v", err)
+		return nil, fmt.Errorf("Unable to read file %s: %v", filename, err)
 	}
 
-	// Read the WORKSPACE file.
-	workspaceFilePath := filepath.Join(workspacePath, "WORKSPACE")
-	fileBytes, err := ioutil.ReadFile(workspaceFilePath)
+	result := &pb_client.RepositoryMetadata{}
+	err = jsonpb.UnmarshalString(string(fileBytes), result)
 	if err != nil {
-		return "", fmt.Errorf("Unable to read WORKSPACE file [%s]: %v", workspaceFilePath, err)
+		return nil, fmt.Errorf("Unable to parse proto file: %v", err)
 	}
 
-	// Find the workspace name inside it.
-	results := workspaceNameRegex.FindStringSubmatch(string(fileBytes))
-
-	// Expect the result to contain exactly two entries: one for the entire match and one for
-	// the the actual workspace name.
-	if len(results) != 2 {
-		return "", fmt.Errorf("Expected 2 matches, but got %d. Matches: %q", len(results), results)
-	}
-	return results[1], nil
+	return result, nil
 }
 
-func getWorkspacePath() (string, error) {
-	outBytes, err := exec.Command(bazelBinary, "info", "workspace").Output()
+func getRepoRoot() (string, error) {
+	outBytes, err := exec.Command(gitBinary, "rev-parse", "--show-toplevel").Output()
 	if err != nil {
-		return "", fmt.Errorf("Unable to get workspace path: %v", err)
+		return "", fmt.Errorf("Unable to execute git: %v", err)
 	}
 	return strings.Trim(string(outBytes), "\r\n"), nil
 }
