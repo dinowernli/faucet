@@ -86,7 +86,6 @@ type coordinatorService struct {
 
 func (s *coordinatorService) Check(context.Context, *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
 	// TODO(dino): Make up a check id, create a record for the check id, add it to storage.
-	// TODO(dino): Look at the repository at the requested revision, work out what need to be tested.
 	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
 	// TODO(dino): Return the check id to the caller.
 	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
