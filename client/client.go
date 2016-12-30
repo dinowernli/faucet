@@ -73,6 +73,7 @@ func main() {
 	}
 	logger.Infof("Request: %v", request)
 
+	// TODO(dino): Add SSL and context deadlines.
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
 
