@@ -40,17 +40,6 @@ message ExecutionStatus {
 message ExecutionRequest {
   // The exact state of a repository to use for this execution.
   faucet.workspace.Checkout checkout = 1;
-
-  // The Bazel targets to execute.
-  repeated Target targets = 2;
-  
-  // A Bazel target. The exact semantics of what it means to execute a target
-  // depends on its "kind". For instance, test targets are handled differently
-  // from non-test targets.
-  message Target {
-    // The absolute path to the target, e.g., "//foo/bar:baz".
-    string path = 1;
-  }
 }
 
 message ExecutionResponse {
