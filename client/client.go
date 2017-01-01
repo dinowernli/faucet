@@ -38,8 +38,6 @@ func main() {
 
 	logger.Infof("Using coordinator: %s", *flagCoordinator)
 
-	marshaler := jsonpb.Marshaler{}
-
 	// TODO(dino): Check that there are no uncommited changes.
 	// TODO(dino): Have better messaging around common failure cases
 
@@ -73,13 +71,7 @@ func main() {
 			Repository: repoProto(cloneUrl),
 		},
 	}
-
-	requestJson, err := marshaler.MarshalToString(checkRequest)
-	if err != nil {
-		logger.Errorf("Unable to marshal request proto to string: %v", err)
-		return
-	}
-	logger.Infof("Sending CheckRequest: %v", requestJson)
+	logger.Infof("Sending CheckRequest: %v", checkRequest)
 
 	// TODO(dino): Add SSL and context deadlines.
 	connection, err := grpc.Dial(*flagCoordinator, grpc.WithInsecure(), grpc.WithTimeout(rpcTimeout))

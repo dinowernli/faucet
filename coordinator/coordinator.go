@@ -84,7 +84,8 @@ type coordinatorService struct {
 	storage storage.Storage
 }
 
-func (s *coordinatorService) Check(context.Context, *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
+func (s *coordinatorService) Check(ctx context.Context, request *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
+	s.logger.Infof("Got check request: %v", request)
 	// TODO(dino): Make up a check id, create a record for the check id, add it to storage.
 	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
 	// TODO(dino): Return the check id to the caller.
