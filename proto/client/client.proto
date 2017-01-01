@@ -10,7 +10,7 @@ message RepositoryMetadata {
 
 message GitRepositoryMetadata {
   // A target repository in a format which can be cloned using 'git clone'.
-  string repo_url = 1;
+  string clone_url = 1;
 
   // The name of the branch used as a target to merge change sets into.
   string target_branch = 2;

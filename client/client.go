@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	pb_client "dinowernli.me/faucet/proto/client"
 	pb_coordinator "dinowernli.me/faucet/proto/service/coordinator"
@@ -23,6 +24,8 @@ const (
 	// TODO(dino): Check for the existence of the binaries, allow overriding.
 	gitBinary            = "git"
 	repoMetadataFilename = "FAUCET"
+
+	rpcTimeout = time.Second * 3
 )
 
 var (
@@ -35,6 +38,8 @@ func main() {
 
 	logger.Infof("Using coordinator: %s", *flagCoordinator)
 
+	marshaler := jsonpb.Marshaler{}
+
 	// TODO(dino): Check that there are no uncommited changes.
 	// TODO(dino): Have better messaging around common failure cases
 
@@ -43,41 +48,41 @@ func main() {
 		logger.Errorf("Unable to get repository root: %v", err)
 		return
 	}
-	logger.Infof("Using repository root: %s", repoRoot)
 
 	repoMeta, err := getRepoMetadata(repoRoot)
 	if err != nil {
 		logger.Errorf("Unable to get repository metadata: %v", err)
 		return
 	}
-	logger.Infof("Using repository metadata: %s", repoMeta)
+
+	cloneUrl := repoMeta.GitRepo.CloneUrl
+	if cloneUrl == "" {
+		logger.Errorf("Got invalid clone url: %s", cloneUrl)
+		return
+	}
 
 	commitHash, err := getCommitHash()
 	if err != nil {
 		logger.Errorf("Unable to get commit hash: %v", err)
 		return
 	}
-	logger.Infof("Using commit hash: %s", commitHash)
-	revision := &pb_workspace.Revision{
-		&pb_workspace.Revision_GitRevision_{
-			GitRevision: &pb_workspace.Revision_GitRevision{
-				CommitHash: commitHash,
-			},
+
+	checkRequest := &pb_coordinator.CheckRequest{
+		Checkout: &pb_workspace.Checkout{
+			Revision:   revisionProto(commitHash),
+			Repository: repoProto(cloneUrl),
 		},
 	}
 
-	request := &pb_coordinator.CheckRequest{
-		Checkout: &pb_workspace.Checkout{
-			Revision: revision,
-		},
+	requestJson, err := marshaler.MarshalToString(checkRequest)
+	if err != nil {
+		logger.Errorf("Unable to marshal request proto to string: %v", err)
+		return
 	}
-	logger.Infof("Request: %v", request)
+	logger.Infof("Sending CheckRequest: %v", requestJson)
 
 	// TODO(dino): Add SSL and context deadlines.
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithInsecure())
-
-	connection, err := grpc.Dial(*flagCoordinator, opts...)
+	connection, err := grpc.Dial(*flagCoordinator, grpc.WithInsecure(), grpc.WithTimeout(rpcTimeout))
 	if err != nil {
 		logger.Errorf("Failed to connect to %s: %v", *flagCoordinator, err)
 		return
@@ -92,6 +97,26 @@ func main() {
 	}
 
 	logger.Infof("Got response: %v", response)
+}
+
+func revisionProto(gitCommitHash string) *pb_workspace.Revision {
+	return &pb_workspace.Revision{
+		&pb_workspace.Revision_GitRevision_{
+			GitRevision: &pb_workspace.Revision_GitRevision{
+				CommitHash: gitCommitHash,
+			},
+		},
+	}
+}
+
+func repoProto(cloneUrl string) *pb_workspace.Repository {
+	return &pb_workspace.Repository{
+		&pb_workspace.Repository_GitRepository_{
+			&pb_workspace.Repository_GitRepository{
+				CloneUrl: cloneUrl,
+			},
+		},
+	}
 }
 
 func getRepoMetadata(repoRoot string) (*pb_client.RepositoryMetadata, error) {
