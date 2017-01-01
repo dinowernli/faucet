@@ -1,17 +1,7 @@
 syntax = "proto3";
 
+// TODO(dino): Rename this to repository.
 package faucet.workspace;
-
-// A Bazel workspace.
-message Workspace {
-  // An (arbitrary) name given to the workspace.
-  string name = 1;
-
-  // A source control repository containing the source files for this
-  // workspace. A checkout of the repo must yield a directory structure
-  // understood by Bazel.
-  Repository repository = 2;
-}
 
 // A version control repository.
 message Repository {
@@ -41,6 +31,6 @@ message Revision {
 
 // Represents a repository at a particular revision.
 message Checkout {
-  Workspace workspace = 1;
+  Repository repository = 1;
   Revision revision = 2;
 }

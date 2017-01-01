@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package faucet.client;
+
+// An instance of this proto must sit in a file called FAUCET at the root of
+// the repository.
+message RepositoryMetadata {
+  GitRepositoryMetadata git_repo = 1;
+}
+
+message GitRepositoryMetadata {
+  // A target repository in a format which can be cloned using 'git clone'.
+  string repo_url = 1;
+
+  // The name of the branch used as a target to merge change sets into.
+  string target_branch = 2;
+}
+
