@@ -93,7 +93,7 @@ func (c *Coordinator) Check(ctx context.Context, request *pb_coordinator.CheckRe
 	if err != nil {
 		return nil, grpc.Errorf(codes.Internal, "Unable to create storage record for check: %v", err)
 	}
-	c.logger.Infof("Create record for check")
+	c.logger.Infof("Created record for check")
 
 	// TODO(dino): Make an rpc to the picked worker to kick off checking.
 
@@ -109,8 +109,11 @@ func (s *Coordinator) GetStatus(ctx context.Context, request *pb_coordinator.Sta
 		return nil, err
 	}
 
-	// TODO(dino): Actually use the record to populate the status response.
-	return &pb_coordinator.StatusResponse{}, nil
+	// TODO(dino): Actually use the record to populate the status response. For now, we don't
+	// actually kick off any builds, so assume always pending.
+	return &pb_coordinator.StatusResponse{
+		Status: pb_coordinator.StatusResponse_PENDING,
+	}, nil
 }
 
 // updateWorkerMap performs a health check on all known workers and udpates the

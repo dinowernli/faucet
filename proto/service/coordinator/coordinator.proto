@@ -19,7 +19,16 @@ message StatusRequest {
   string check_id = 1;
 }
 
+// A response desscribing the status of the requested check. Returns a grpc
+// NOT_FOUND if the check id specified in the request was not found.
 message StatusResponse {
+  enum Status {
+    UNKNOWN = 0;
+    PENDING = 1;
+    SUCCESS = 2;
+    FAILURE = 3;
+  }
+  Status status = 1;
 }
 
 service Coordinator {
