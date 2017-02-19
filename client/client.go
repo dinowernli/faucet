@@ -21,7 +21,6 @@ import (
 )
 
 const (
-	// TODO(dino): Check for the existence of the binaries, allow overriding.
 	gitBinary            = "git"
 	repoMetadataFilename = "FAUCET"
 
@@ -38,6 +37,7 @@ func main() {
 
 	logger.Infof("Using coordinator: %s", *flagCoordinator)
 
+	// TODO(dino): Check for the existence of the binaries, allow overriding.
 	// TODO(dino): Check that there are no uncommited changes.
 	// TODO(dino): Have better messaging around common failure cases
 
@@ -73,8 +73,8 @@ func main() {
 	}
 	logger.Infof("Sending CheckRequest: %v", checkRequest)
 
-	// TODO(dino): Add SSL and context deadlines.
-	connection, err := grpc.Dial(*flagCoordinator, grpc.WithInsecure(), grpc.WithTimeout(rpcTimeout))
+	// TODO(dino): Add SSL.
+	connection, err := grpc.Dial(*flagCoordinator, grpc.WithInsecure())
 	if err != nil {
 		logger.Errorf("Failed to connect to %s: %v", *flagCoordinator, err)
 		return
@@ -82,7 +82,8 @@ func main() {
 	defer connection.Close()
 
 	client := pb_coordinator.NewCoordinatorClient(connection)
-	response, err := client.Check(context.TODO(), &pb_coordinator.CheckRequest{})
+	ctx, _ := context.WithTimeout(context.Background(), rpcTimeout)
+	response, err := client.Check(ctx, checkRequest)
 	if err != nil {
 		logger.Errorf("Failed to retrieve status: %v", err)
 		return
