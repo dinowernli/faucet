@@ -1,3 +1,3 @@
 #!/bin/sh
 
-bazel build client && ./bazel-bin/client/client
+bazel build //client && $FAUCET_ROOT/bazel-bin/client/client
