@@ -58,6 +58,8 @@ func (c *Coordinator) Start() {
 
 	// Set up a periodic health check for all known workers.
 	go func() {
+		// TODO(dino): rework this entirely... every worker needs a timer, etc
+
 		pollTicker := time.NewTicker(workerPollFrequency)
 		for _ = range pollTicker.C {
 			workers := c.config.Proto().Workers
@@ -76,12 +78,21 @@ func (c *Coordinator) Start() {
 			}
 			c.workerPoolLock.Unlock()
 
-			// TODO(dino): rework this entirely... every worker needs a timer, etc
-
 			// Then, update worker statuses in-place based on health checks.
-			for _, workerProto := range c.config.Proto().Workers {
-				_ = c.checkWorker(workerProto)
+			for _, workerProto := range workers {
+				workerStatus := c.checkWorker(workerProto)
+				key := workerAddress(workerProto)
+
+				existing, ok := c.workerPool[key]
+				if ok {
+					existing.healthy = workerStatus.healthy
+				}
 			}
+
+			// Finally, grab the lock again and swap in the new pool.
+			c.workerPoolLock.Lock()
+			c.workerPool = newPool
+			c.workerPoolLock.Unlock()
 		}
 	}()
 }
