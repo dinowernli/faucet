@@ -97,18 +97,26 @@ func (c *Coordinator) Start() {
 	}()
 }
 
-func (s *Coordinator) Check(ctx context.Context, request *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
-	s.logger.Infof("Got check request: %v", request)
+func (c *Coordinator) Check(ctx context.Context, request *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
+	c.logger.Infof("Got check request for checkout: %v", request.Checkout)
 
 	checkId, err := createCheckId()
 	if err != nil {
 		return nil, grpc.Errorf(codes.Internal, "Unable to generate check id: %v", err)
 	}
-	s.logger.Infof("Generated check id: %s", checkId)
+	c.logger.Infof("Generated check id: %s", checkId)
 
-	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
-	// TODO(dino): Return the check id to the caller.
-	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
+	worker, err := c.pickWorker()
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "Unable to pick a worker for check: %v", err)
+	}
+	c.logger.Infof("Picked worker: %v", worker)
+
+	// TODO(dino): Make an rpc to the picked worker to kick of checking.
+
+	return &pb_coordinator.CheckResponse{
+		CheckId: checkId,
+	}, nil
 }
 
 func (s *Coordinator) GetStatus(ctx context.Context, request *pb_coordinator.StatusRequest) (*pb_coordinator.StatusResponse, error) {
@@ -120,6 +128,19 @@ func (s *Coordinator) GetStatus(ctx context.Context, request *pb_coordinator.Sta
 
 	// TODO(dino): Actually use the record to populate the status response.
 	return &pb_coordinator.StatusResponse{}, nil
+}
+
+// pickWorker returns the address of a healthy worker. Returns an error if we
+// were unable to pick a worker.
+func (c *Coordinator) pickWorker() (string, error) {
+	c.workerPoolLock.Lock()
+	defer c.workerPoolLock.Unlock()
+	for workerAddress, workerStatus := range c.workerPool {
+		if workerStatus.healthy {
+			return workerAddress, nil
+		}
+	}
+	return "", fmt.Errorf("Unable to find healthy worker")
 }
 
 func (c *Coordinator) checkWorker(proto *pb_config.Worker) *workerStatus {
