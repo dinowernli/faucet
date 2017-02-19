@@ -73,23 +73,32 @@ func main() {
 	}
 	logger.Infof("Sending CheckRequest: %v", checkRequest)
 
+	response, err := sendCheckRequest(checkRequest)
+	if err != nil {
+		logger.Errorf("Error sending check request", err)
+		return
+	}
+	logger.Infof("Got response: %v", response)
+
+	// TODO(dino): Start polling the coordinator's status endpoint with the returned check id.
+}
+
+func sendCheckRequest(request *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
 	// TODO(dino): Add SSL.
 	connection, err := grpc.Dial(*flagCoordinator, grpc.WithInsecure())
 	if err != nil {
-		logger.Errorf("Failed to connect to %s: %v", *flagCoordinator, err)
-		return
+		return nil, fmt.Errorf("Failed to connect to %s: %v", *flagCoordinator, err)
 	}
 	defer connection.Close()
 
 	client := pb_coordinator.NewCoordinatorClient(connection)
 	ctx, _ := context.WithTimeout(context.Background(), rpcTimeout)
-	response, err := client.Check(ctx, checkRequest)
+	response, err := client.Check(ctx, request)
 	if err != nil {
-		logger.Errorf("Failed to retrieve status: %v", err)
-		return
+		return nil, fmt.Errorf("Failed to retrieve status: %v", err)
 	}
 
-	logger.Infof("Got response: %v", response)
+	return response, nil
 }
 
 func revisionProto(gitCommitHash string) *pb_workspace.Revision {

@@ -12,6 +12,7 @@ import (
 	pb_config "dinowernli.me/faucet/proto/config"
 	pb_coordinator "dinowernli.me/faucet/proto/service/coordinator"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
+	pb_storage "dinowernli.me/faucet/proto/storage"
 
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -84,8 +85,17 @@ func (c *Coordinator) Check(ctx context.Context, request *pb_coordinator.CheckRe
 	}
 	c.logger.Infof("Picked worker: %v", worker)
 
-	// TODO(dino): Create a storage entry for this check.
-	// TODO(dino): Make an rpc to the picked worker to kick of checking.
+	record := &pb_storage.CheckRecord{
+		Id:     checkId,
+		Status: pb_storage.CheckRecord_STARTED,
+	}
+	err = c.storage.Put(record)
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "Unable to create storage record for check: %v", err)
+	}
+	c.logger.Infof("Created record for check")
+
+	// TODO(dino): Make an rpc to the picked worker to kick off checking.
 
 	return &pb_coordinator.CheckResponse{
 		CheckId: checkId,
@@ -99,8 +109,11 @@ func (s *Coordinator) GetStatus(ctx context.Context, request *pb_coordinator.Sta
 		return nil, err
 	}
 
-	// TODO(dino): Actually use the record to populate the status response.
-	return &pb_coordinator.StatusResponse{}, nil
+	// TODO(dino): Actually use the record to populate the status response. For now, we don't
+	// actually kick off any builds, so assume always pending.
+	return &pb_coordinator.StatusResponse{
+		Status: pb_coordinator.StatusResponse_PENDING,
+	}, nil
 }
 
 // updateWorkerMap performs a health check on all known workers and udpates the
