@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
+	pb_workspace "dinowernli.me/faucet/proto/workspace"
+	"dinowernli.me/faucet/worker/checkout"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -46,12 +48,16 @@ func TestStatusUpdates(t *testing.T) {
 
 func createScheduler() *scheduler {
 	mockBazelClient := &mockBazelClient{}
-	mockBazelClient.On("Run", mock.Anything).Return(nil)
+	mockBazelClient.On("Run", mock.Anything, mock.Anything).Return(nil)
+
+	mockCheckoutProvider := &mockCheckoutProvider{}
+	mockCheckoutProvider.On("Get", mock.Anything).Return(&checkout.Checkout{}, nil)
 
 	return &scheduler{
-		logger: logrus.New(),
-		bazel:  mockBazelClient,
-		queue:  make(chan *task, queueCapacityForTesting),
+		logger:           logrus.New(),
+		bazel:            mockBazelClient,
+		queue:            make(chan *task, queueCapacityForTesting),
+		checkoutProvider: mockCheckoutProvider,
 	}
 }
 
@@ -59,7 +65,16 @@ type mockBazelClient struct {
 	mock.Mock
 }
 
-func (b *mockBazelClient) Run(targets []string) error {
-	args := b.Called(targets)
+func (b *mockBazelClient) Run(rootPath string, targets []string) error {
+	args := b.Called(rootPath, targets)
 	return args.Error(0)
+}
+
+type mockCheckoutProvider struct {
+	mock.Mock
+}
+
+func (p *mockCheckoutProvider) Get(proto *pb_workspace.Checkout) (*checkout.Checkout, error) {
+	args := p.Called(proto)
+	return args.Get(0).(*checkout.Checkout), args.Error(1)
 }

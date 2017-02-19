@@ -1,6 +1,8 @@
 package coordinator
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"sync"
 	"time"
@@ -19,6 +21,7 @@ import (
 
 const (
 	workerPollFrequency = time.Second * 2
+	checkIdSize         = 6
 )
 
 // Coordinator represents an agent in the system which implements the faucet
@@ -122,9 +125,43 @@ func (c *Coordinator) checkWorker(proto *pb_config.Worker) *workerStatus {
 		return &workerStatus{healthy: false}
 	}
 
-	return &workerStatus{healthy: response.Healthy}
+	health := "healthy"
+	if !response.Healthy {
+		health = "unhealthy"
+	}
+	c.logger.Infof("Worker at [%s]: [%s]", address, health)
+}
+
+type coordinatorService struct {
+	logger  *logrus.Logger
+	storage storage.Storage
+}
+
+func (s *coordinatorService) Check(ctx context.Context, request *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
+	s.logger.Infof("Got check request: %v", request)
+
+	checkId, err := createCheckId()
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "Unable to generate check id: %v", err)
+	}
+	s.logger.Infof("Generated check id: %s", checkId)
+
+	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
+	// TODO(dino): Return the check id to the caller.
+	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
 }
 
 func workerAddress(proto *pb_config.Worker) string {
 	return fmt.Sprintf("%v:%v", proto.GrpcHost, proto.GrpcPort)
+}
+
+func createCheckId() (string, error) {
+	buffer := make([]byte, 16)
+	_, err := rand.Read(buffer)
+	if err != nil {
+		return "", fmt.Errorf("Unable to read random bytes into buffer: %v", err)
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(buffer)
+	return encoded[0 : checkIdSize-1], nil
 }
