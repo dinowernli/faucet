@@ -86,9 +86,15 @@ func (c *Coordinator) Start() {
 	}()
 }
 
-func (s *Coordinator) Check(context.Context, *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
-	// TODO(dino): Make up a check id, create a record for the check id, add it to storage.
-	// TODO(dino): Look at the repository at the requested revision, work out what need to be tested.
+func (s *Coordinator) Check(ctx context.Context, request *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
+	s.logger.Infof("Got check request: %v", request)
+
+	checkId, err := createCheckId()
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "Unable to generate check id: %v", err)
+	}
+	s.logger.Infof("Generated check id: %s", checkId)
+
 	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
 	// TODO(dino): Return the check id to the caller.
 	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
@@ -130,25 +136,7 @@ func (c *Coordinator) checkWorker(proto *pb_config.Worker) *workerStatus {
 		health = "unhealthy"
 	}
 	c.logger.Infof("Worker at [%s]: [%s]", address, health)
-}
-
-type coordinatorService struct {
-	logger  *logrus.Logger
-	storage storage.Storage
-}
-
-func (s *coordinatorService) Check(ctx context.Context, request *pb_coordinator.CheckRequest) (*pb_coordinator.CheckResponse, error) {
-	s.logger.Infof("Got check request: %v", request)
-
-	checkId, err := createCheckId()
-	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "Unable to generate check id: %v", err)
-	}
-	s.logger.Infof("Generated check id: %s", checkId)
-
-	// TODO(dino): Pick a suitable worker (maximize caching potential), kick off the run.
-	// TODO(dino): Return the check id to the caller.
-	return nil, grpc.Errorf(codes.Unimplemented, "Check not implemented")
+	return &workerStatus{healthy: response.Healthy}
 }
 
 func workerAddress(proto *pb_config.Worker) string {
