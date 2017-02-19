@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	workerPollFrequency = time.Second * 2
+	workerPollFrequency = time.Second * 5
 	checkIdSize         = 6
+	healthCheckTimeout  = 100 * time.Millisecond
 )
 
 // Coordinator represents an agent in the system which implements the faucet
@@ -57,42 +58,13 @@ func (c *Coordinator) Start() {
 	c.logger.Infof("Starting coordinator")
 
 	// Set up a periodic health check for all known workers.
+	c.updateWorkerMap()
 	go func() {
 		// TODO(dino): rework this entirely... every worker needs a timer, etc
 
 		pollTicker := time.NewTicker(workerPollFrequency)
 		for _ = range pollTicker.C {
-			workers := c.config.Proto().Workers
-
-			// Create a new map with an entry for every worker in the config.
-			newPool := map[string]*workerStatus{}
-			c.workerPoolLock.Lock()
-			for _, workerProto := range workers {
-				key := workerAddress(workerProto)
-				existing, ok := c.workerPool[key]
-				if ok {
-					newPool[key] = existing
-				} else {
-					newPool[key] = &workerStatus{healthy: false}
-				}
-			}
-			c.workerPoolLock.Unlock()
-
-			// Then, update worker statuses in-place based on health checks.
-			for _, workerProto := range workers {
-				workerStatus := c.checkWorker(workerProto)
-				key := workerAddress(workerProto)
-
-				existing, ok := c.workerPool[key]
-				if ok {
-					existing.healthy = workerStatus.healthy
-				}
-			}
-
-			// Finally, grab the lock again and swap in the new pool.
-			c.workerPoolLock.Lock()
-			c.workerPool = newPool
-			c.workerPoolLock.Unlock()
+			c.updateWorkerMap()
 		}
 	}()
 }
@@ -112,6 +84,7 @@ func (c *Coordinator) Check(ctx context.Context, request *pb_coordinator.CheckRe
 	}
 	c.logger.Infof("Picked worker: %v", worker)
 
+	// TODO(dino): Create a storage entry for this check.
 	// TODO(dino): Make an rpc to the picked worker to kick of checking.
 
 	return &pb_coordinator.CheckResponse{
@@ -128,6 +101,50 @@ func (s *Coordinator) GetStatus(ctx context.Context, request *pb_coordinator.Sta
 
 	// TODO(dino): Actually use the record to populate the status response.
 	return &pb_coordinator.StatusResponse{}, nil
+}
+
+// updateWorkerMap performs a health check on all known workers and udpates the
+// worker pool held by this coordinator.
+func (c *Coordinator) updateWorkerMap() {
+	workers := c.config.Proto().Workers
+
+	// Create a new map with an entry for every worker in the config.
+	newPool := map[string]*workerStatus{}
+
+	c.workerPoolLock.Lock()
+	oldNumHealthy := numHealthy(&c.workerPool)
+
+	for _, workerProto := range workers {
+		key := workerAddress(workerProto)
+		existing, ok := c.workerPool[key]
+		if ok {
+			newPool[key] = existing
+		} else {
+			newPool[key] = &workerStatus{healthy: false}
+		}
+	}
+	c.workerPoolLock.Unlock()
+
+	// Then, update worker statuses in-place based on health checks.
+	for _, workerProto := range workers {
+		workerStatus := c.checkWorker(workerProto)
+		key := workerAddress(workerProto)
+
+		existing, ok := newPool[key]
+		if ok {
+			existing.healthy = workerStatus.healthy
+		}
+	}
+	newNumHealthy := numHealthy(&newPool)
+
+	// Finally, grab the lock again and swap in the new pool.
+	c.workerPoolLock.Lock()
+	c.workerPool = newPool
+	c.workerPoolLock.Unlock()
+
+	if oldNumHealthy != newNumHealthy {
+		c.logger.Infof("Number of healthy workers went from %d to %d", oldNumHealthy, newNumHealthy)
+	}
 }
 
 // pickWorker returns the address of a healthy worker. Returns an error if we
@@ -156,8 +173,8 @@ func (c *Coordinator) checkWorker(proto *pb_config.Worker) *workerStatus {
 	defer connection.Close()
 
 	client := pb_worker.NewWorkerClient(connection)
-	// TODO(dino): Set a deadline here.
-	response, err := client.Status(context.TODO(), &pb_worker.StatusRequest{})
+	ctx, _ := context.WithTimeout(context.Background(), healthCheckTimeout)
+	response, err := client.Status(ctx, &pb_worker.StatusRequest{})
 	if err != nil {
 		c.logger.Errorf("Failed to retrieve status: %v", err)
 		return &workerStatus{healthy: false}
@@ -167,12 +184,22 @@ func (c *Coordinator) checkWorker(proto *pb_config.Worker) *workerStatus {
 	if !response.Healthy {
 		health = "unhealthy"
 	}
-	c.logger.Infof("Worker at [%s]: [%s]", address, health)
+	c.logger.Debugf("Worker at [%s]: [%s]", address, health)
 	return &workerStatus{healthy: response.Healthy}
 }
 
 func workerAddress(proto *pb_config.Worker) string {
 	return fmt.Sprintf("%v:%v", proto.GrpcHost, proto.GrpcPort)
+}
+
+func numHealthy(workerPool *map[string]*workerStatus) int {
+	result := 0
+	for _, status := range *workerPool {
+		if status.healthy {
+			result++
+		}
+	}
+	return result
 }
 
 func createCheckId() (string, error) {
