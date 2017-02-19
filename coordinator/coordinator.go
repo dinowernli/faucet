@@ -46,7 +46,7 @@ func New(logger *logrus.Logger, config config.Config) *Coordinator {
 		logger:         logger,
 		storage:        storage.NewInMemory(),
 		workerPool:     map[string]*workerStatus{},
-		workerPoolLock: &synx.Mutex{},
+		workerPoolLock: &sync.Mutex{},
 	}
 }
 
@@ -63,7 +63,7 @@ func (c *Coordinator) Start() {
 			newPool := map[string]*workerStatus{}
 			c.workerPoolLock.Lock()
 			for _, workerProto := range workers {
-				key := c.workerAddress(workerProto)
+				key := workerAddress(workerProto)
 				existing, ok := c.workerPool[key]
 				if ok {
 					newPool[key] = existing
@@ -77,7 +77,7 @@ func (c *Coordinator) Start() {
 
 			// Then, update worker statuses in-place based on health checks.
 			for _, workerProto := range c.config.Proto().Workers {
-				workerStatus := c.checkWorker(workerProto)
+				_ = c.checkWorker(workerProto)
 			}
 		}
 	}()
