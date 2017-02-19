@@ -6,5 +6,12 @@ package faucet.storage;
 message CheckRecord {
   // A globally unique, opaque id.
   string id = 1;
+
+  enum Status {
+    UNKNOWN = 0;
+    STARTED = 1;
+    FINISHED = 2;
+  }
+  Status status = 2;
 }
 
