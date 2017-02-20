@@ -2,6 +2,7 @@ package worker
 
 import (
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
+	"dinowernli.me/faucet/repository"
 	"dinowernli.me/faucet/worker/scheduler"
 
 	"github.com/Sirupsen/logrus"
@@ -13,25 +14,23 @@ import (
 // Worker represents an agent in the system capable of executing builds. More
 // specifically, a Worker has an implementation of the faucet worker service.
 type Worker struct {
-	Service *workerService
+	scheduler  scheduler.Scheduler
+	repoClient repository.Client
 }
 
 // New creates a new worker.
 func New(logger *logrus.Logger) *Worker {
-	return &Worker{Service: &workerService{
-		scheduler: scheduler.New(logger),
-	}}
+	return &Worker{
+		scheduler:  scheduler.New(logger),
+		repoClient: repository.NewClient(logger),
+	}
 }
 
-type workerService struct {
-	scheduler scheduler.Scheduler
-}
-
-func (s *workerService) Status(context context.Context, request *pb_worker.StatusRequest) (*pb_worker.StatusResponse, error) {
+func (s *Worker) Status(context context.Context, request *pb_worker.StatusRequest) (*pb_worker.StatusResponse, error) {
 	return &pb_worker.StatusResponse{Healthy: true, QueueSize: int32(s.scheduler.QueueSize())}, nil
 }
 
-func (s *workerService) Execute(request *pb_worker.ExecutionRequest, stream pb_worker.Worker_ExecuteServer) error {
+func (s *Worker) Execute(request *pb_worker.ExecutionRequest, stream pb_worker.Worker_ExecuteServer) error {
 	out, err := s.scheduler.Schedule(request)
 	if err != nil {
 		return grpc.Errorf(codes.Internal, "Unable to schedule execution request: %v", err)
