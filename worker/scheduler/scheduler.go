@@ -3,8 +3,8 @@ package scheduler
 import (
 	"fmt"
 
+	"dinowernli.me/faucet/bazel"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
-	"dinowernli.me/faucet/worker/bazel"
 	"dinowernli.me/faucet/worker/checkout"
 
 	"github.com/Sirupsen/logrus"
