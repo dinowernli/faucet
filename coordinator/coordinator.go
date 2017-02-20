@@ -189,13 +189,24 @@ func (c *Coordinator) executeCheck(address string, request *pb_worker.ExecutionR
 
 	client := pb_worker.NewWorkerClient(connection)
 	ctx, _ := context.WithTimeout(context.Background(), executeTimeout)
-	_, err = client.Execute(ctx, request)
+	stream, err := client.Execute(ctx, request)
 	if err != nil {
 		c.logger.Errorf("Failed to send execute request to worker: %v", err)
 		return
 	}
 
-	// TODO(dino): Somehow react to the stream of responses.
+	for {
+		update, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			c.logger.Errorf("Got error while reading from rpc stream: %v", err)
+			return
+		}
+
+		c.logger.Infof("Got update: %v", update)
+	}
 }
 
 func (c *Coordinator) checkWorker(address string) *workerStatus {
