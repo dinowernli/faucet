@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
@@ -24,6 +25,7 @@ const (
 	workerPollFrequency = time.Second * 5
 	checkIdSize         = 6
 	healthCheckTimeout  = 100 * time.Millisecond
+	executeTimeout      = 1 * time.Minute
 )
 
 // Coordinator represents an agent in the system which implements the faucet
@@ -79,11 +81,11 @@ func (c *Coordinator) Check(ctx context.Context, request *pb_coordinator.CheckRe
 	}
 	c.logger.Infof("Generated check id: %s", checkId)
 
-	worker, err := c.pickWorker()
+	workerAddress, err := c.pickWorker()
 	if err != nil {
 		return nil, grpc.Errorf(codes.Internal, "Unable to pick a worker for check: %v", err)
 	}
-	c.logger.Infof("Picked worker: %v", worker)
+	c.logger.Infof("Picked worker: %v", workerAddress)
 
 	record := &pb_storage.CheckRecord{
 		Id:     checkId,
@@ -96,6 +98,8 @@ func (c *Coordinator) Check(ctx context.Context, request *pb_coordinator.CheckRe
 	c.logger.Infof("Created record for check")
 
 	// TODO(dino): Make an rpc to the picked worker to kick off checking.
+	execRequest := &pb_worker.ExecutionRequest{}
+	c.executeCheck(workerAddress, execRequest)
 
 	return &pb_coordinator.CheckResponse{
 		CheckId: checkId,
@@ -140,7 +144,7 @@ func (c *Coordinator) updateWorkerMap() {
 
 	// Then, update worker statuses in-place based on health checks.
 	for _, workerProto := range workers {
-		workerStatus := c.checkWorker(workerProto)
+		workerStatus := c.checkWorker(workerAddress(workerProto))
 		key := workerAddress(workerProto)
 
 		existing, ok := newPool[key]
@@ -173,8 +177,41 @@ func (c *Coordinator) pickWorker() (string, error) {
 	return "", fmt.Errorf("Unable to find healthy worker")
 }
 
-func (c *Coordinator) checkWorker(proto *pb_config.Worker) *workerStatus {
-	address := workerAddress(proto)
+func (c *Coordinator) executeCheck(address string, request *pb_worker.ExecutionRequest) {
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithInsecure())
+
+	connection, err := grpc.Dial(address, opts...)
+	if err != nil {
+		c.logger.Errorf("Failed to connect to %s: %v", address, err)
+		return
+	}
+	defer connection.Close()
+
+	client := pb_worker.NewWorkerClient(connection)
+	ctx, _ := context.WithTimeout(context.Background(), executeTimeout)
+	stream, err := client.Execute(ctx, request)
+	if err != nil {
+		c.logger.Errorf("Failed to send execute request to worker: %v", err)
+		return
+	}
+
+	for {
+		update, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			c.logger.Errorf("Got error while reading from rpc stream: %v", err)
+			return
+		}
+
+		c.logger.Infof("Got update: %v", update)
+		// TODO(dino): Update the state of the check in storage.
+	}
+}
+
+func (c *Coordinator) checkWorker(address string) *workerStatus {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
 

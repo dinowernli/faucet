@@ -49,7 +49,7 @@ func main() {
 
 func startServer(logger *logrus.Logger, worker *worker.Worker, coordinator *coordinator.Coordinator) {
 	server := grpc.NewServer()
-	pb_worker.RegisterWorkerServer(server, worker.Service)
+	pb_worker.RegisterWorkerServer(server, worker)
 	logger.Infof("Registered worker service")
 
 	pb_coordinator.RegisterCoordinatorServer(server, coordinator)

@@ -4,10 +4,10 @@ go_library(
     name = "go_default_library",
     srcs = ["scheduler.go"],
     deps = [
+        "//bazel:go_default_library",
         "//proto/service/worker:go_default_library",
         "//proto/workspace:go_default_library",
-        "//worker/bazel:go_default_library",
-        "//worker/checkout:go_default_library",
+        "//repository:go_default_library",
         "@com_github_sirupsen_logrus//:go_default_library",
     ],
     visibility = ["//visibility:public"],
