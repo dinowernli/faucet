@@ -5,7 +5,6 @@ import (
 
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
 	pb_workspace "dinowernli.me/faucet/proto/workspace"
-	"dinowernli.me/faucet/worker/checkout"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -50,14 +49,14 @@ func createScheduler() *scheduler {
 	mockBazelClient := &mockBazelClient{}
 	mockBazelClient.On("Run", mock.Anything, mock.Anything).Return(nil)
 
-	mockCheckoutProvider := &mockCheckoutProvider{}
-	mockCheckoutProvider.On("Get", mock.Anything).Return(&checkout.Checkout{}, nil)
+	mockRepoClient := &mockRepoClient{}
+	mockRepoClient.On("Checkout", mock.Anything).Return("", nil)
 
 	return &scheduler{
-		logger:           logrus.New(),
-		bazel:            mockBazelClient,
-		queue:            make(chan *task, queueCapacityForTesting),
-		checkoutProvider: mockCheckoutProvider,
+		logger:     logrus.New(),
+		bazel:      mockBazelClient,
+		queue:      make(chan *task, queueCapacityForTesting),
+		repoClient: mockRepoClient,
 	}
 }
 
@@ -70,11 +69,11 @@ func (b *mockBazelClient) Run(rootPath string, targets []string) error {
 	return args.Error(0)
 }
 
-type mockCheckoutProvider struct {
+type mockRepoClient struct {
 	mock.Mock
 }
 
-func (p *mockCheckoutProvider) Get(proto *pb_workspace.Checkout) (*checkout.Checkout, error) {
+func (p *mockRepoClient) Checkout(proto *pb_workspace.Checkout) (string, error) {
 	args := p.Called(proto)
-	return args.Get(0).(*checkout.Checkout), args.Error(1)
+	return args.Get(0).(string), args.Error(1)
 }

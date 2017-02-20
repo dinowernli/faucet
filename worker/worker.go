@@ -2,7 +2,6 @@ package worker
 
 import (
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
-	"dinowernli.me/faucet/repository"
 	"dinowernli.me/faucet/worker/scheduler"
 
 	"github.com/Sirupsen/logrus"
@@ -14,15 +13,13 @@ import (
 // Worker represents an agent in the system capable of executing builds. More
 // specifically, a Worker has an implementation of the faucet worker service.
 type Worker struct {
-	scheduler  scheduler.Scheduler
-	repoClient repository.Client
+	scheduler scheduler.Scheduler
 }
 
 // New creates a new worker.
 func New(logger *logrus.Logger) *Worker {
 	return &Worker{
-		scheduler:  scheduler.New(logger),
-		repoClient: repository.NewClient(logger),
+		scheduler: scheduler.New(logger),
 	}
 }
 

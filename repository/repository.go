@@ -29,6 +29,9 @@ func NewClient(logger *logrus.Logger) Client {
 }
 
 func (c *client) Checkout(checkout *pb_workspace.Checkout) (string, error) {
+	// TODO(dino): Consider returning something closeable rather than a string.
+	// When the resource gets closed, the cloned repo can be reused.
+
 	destination, err := c.clone(checkout.Repository)
 	if err != nil {
 		return "", fmt.Errorf("Unable to clone repo %v: %v", checkout.Repository, err)

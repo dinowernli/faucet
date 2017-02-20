@@ -5,7 +5,7 @@ import (
 
 	"dinowernli.me/faucet/bazel"
 	pb_worker "dinowernli.me/faucet/proto/service/worker"
-	"dinowernli.me/faucet/worker/checkout"
+	"dinowernli.me/faucet/repository"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -35,19 +35,19 @@ type Scheduler interface {
 
 func New(logger *logrus.Logger) Scheduler {
 	return &scheduler{
-		logger:           logger,
-		bazel:            bazel.NewClient(logger),
-		queue:            make(chan *task, queueCapacity),
-		checkoutProvider: checkout.NewProvider(),
+		logger:     logger,
+		bazel:      bazel.NewClient(logger),
+		queue:      make(chan *task, queueCapacity),
+		repoClient: repository.NewClient(logger),
 	}
 }
 
 // scheduler implements a scheduling algorithm based on a simple FIFO queue.
 type scheduler struct {
-	logger           *logrus.Logger
-	bazel            bazel.Client
-	queue            chan *task
-	checkoutProvider checkout.CheckoutProvider
+	logger     *logrus.Logger
+	bazel      bazel.Client
+	queue      chan *task
+	repoClient repository.Client
 }
 
 func (s *scheduler) Schedule(request *pb_worker.ExecutionRequest) (chan TaskStatus, error) {
@@ -83,7 +83,7 @@ func (s *scheduler) execute(task *task) {
 
 	// Acquire a checkout of the source tree in question.
 	checkoutProto := task.request.Checkout
-	checkout, err := s.checkoutProvider.Get(checkoutProto)
+	checkoutRoot, err := s.repoClient.Checkout(checkoutProto)
 	if err != nil {
 		// TODO(dino): Have the channel return a struct in order to be able to
 		// send the error to the caller.
@@ -91,7 +91,6 @@ func (s *scheduler) execute(task *task) {
 		task.statusChannel <- StatusFailed
 		return
 	}
-	defer checkout.Close()
 
 	// Resolve the paths in need of building and testing.
 	// TODO(dino): Actually resolve.
@@ -99,7 +98,7 @@ func (s *scheduler) execute(task *task) {
 
 	// Use Bazel to build/test the paths.
 	// TODO(dino): Handle build failures.
-	s.bazel.Run(checkout.RootPath, paths)
+	s.bazel.Run(checkoutRoot, paths)
 
 	task.statusChannel <- StatusFinished
 }

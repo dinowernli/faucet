@@ -6,7 +6,6 @@ go_library(
     deps = [
         "//proto/service/worker:go_default_library",
         "//proto/workspace:go_default_library",
-        "//repository:go_default_library",
         "//worker/scheduler:go_default_library",
         "@com_github_sirupsen_logrus//:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
