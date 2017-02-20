@@ -207,6 +207,7 @@ func (c *Coordinator) executeCheck(address string, request *pb_worker.ExecutionR
 		}
 
 		c.logger.Infof("Got update: %v", update)
+		// TODO(dino): Update the state of the check in storage.
 	}
 }
 
