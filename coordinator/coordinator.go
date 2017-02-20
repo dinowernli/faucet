@@ -96,6 +96,7 @@ func (c *Coordinator) Check(ctx context.Context, request *pb_coordinator.CheckRe
 	c.logger.Infof("Created record for check")
 
 	// TODO(dino): Make an rpc to the picked worker to kick off checking.
+	execRequest := &pb_worker.ExecutionRequest{}
 
 	return &pb_coordinator.CheckResponse{
 		CheckId: checkId,

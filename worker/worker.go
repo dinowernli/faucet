@@ -13,12 +13,14 @@ import (
 // Worker represents an agent in the system capable of executing builds. More
 // specifically, a Worker has an implementation of the faucet worker service.
 type Worker struct {
+	logger    *logrus.Logger
 	scheduler scheduler.Scheduler
 }
 
 // New creates a new worker.
 func New(logger *logrus.Logger) *Worker {
 	return &Worker{
+		logger:    logger,
 		scheduler: scheduler.New(logger),
 	}
 }
@@ -38,6 +40,7 @@ func (s *Worker) Execute(request *pb_worker.ExecutionRequest, stream pb_worker.W
 		response := &pb_worker.ExecutionResponse{
 			ExecutionStatus: status,
 		}
+		s.logger.Infof("Streaming response to coordinator: %v", response)
 		stream.SendMsg(response)
 	}
 
