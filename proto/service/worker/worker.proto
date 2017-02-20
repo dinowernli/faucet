@@ -14,26 +14,12 @@ message StatusResponse {
 }
 
 // The current state of a requested execution.
-message ExecutionStatus {
-  message Progress {
-    oneof state {
-      Queued queued = 1;
-      Running running = 2;
-      Finished finished = 3;
-    }
-  }
-
-  // The execution is currently sitting in the queue.
-  message Queued {
-    // The position of this execution in the queue.
-    int32 position = 1;
-  }
-  
-  // The execution is currently running.
-  message Running {}
-
-  // The execution has terminated.
-  message Finished {}
+enum ExecutionStatus {
+  UNKNOWN = 0;
+  QUEUED = 1;
+  RUNNING = 2;
+  SUCCEEDED = 3;
+  FAILED = 4;
 }
 
 // A request to execute a build.

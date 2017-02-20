@@ -10,14 +10,9 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
-type TaskStatus int
-
 const (
-	StatusRunning  TaskStatus = iota
-	StatusFinished TaskStatus = iota
-	StatusFailed   TaskStatus = iota
-
-	queueCapacity = 100
+	queueCapacity       = 100
+	taskChannelCapacity = 10
 )
 
 // Scheduler is in charge of taking incoming requests (on a single worker) and
@@ -27,7 +22,7 @@ type Scheduler interface {
 	// this returns without error, the task can be conisdered accepted. Updates
 	// on the status of the task are sent to the caller throught the returned
 	// channel.
-	Schedule(request *pb_worker.ExecutionRequest) (chan TaskStatus, error)
+	Schedule(request *pb_worker.ExecutionRequest) (chan pb_worker.ExecutionStatus, error)
 
 	// QueueSize returns the number of tasks currently queued.
 	QueueSize() int
@@ -50,14 +45,15 @@ type scheduler struct {
 	repoClient repository.Client
 }
 
-func (s *scheduler) Schedule(request *pb_worker.ExecutionRequest) (chan TaskStatus, error) {
+func (s *scheduler) Schedule(request *pb_worker.ExecutionRequest) (chan pb_worker.ExecutionStatus, error) {
 	task := &task{
 		request:       request,
-		statusChannel: make(chan TaskStatus),
+		statusChannel: make(chan pb_worker.ExecutionStatus, taskChannelCapacity),
 	}
 
 	select {
 	case s.queue <- task:
+		task.statusChannel <- pb_worker.ExecutionStatus_QUEUED
 		return task.statusChannel, nil
 	default:
 		return nil, fmt.Errorf("The scheduler queue is full")
@@ -79,7 +75,7 @@ func (s *scheduler) start() {
 }
 
 func (s *scheduler) execute(task *task) {
-	task.statusChannel <- StatusRunning
+	task.statusChannel <- pb_worker.ExecutionStatus_RUNNING
 
 	// Acquire a checkout of the source tree in question.
 	checkoutProto := task.request.Checkout
@@ -88,7 +84,7 @@ func (s *scheduler) execute(task *task) {
 		// TODO(dino): Have the channel return a struct in order to be able to
 		// send the error to the caller.
 		s.logger.Errorf("Unable to get checkout for %v, error: %v", checkoutProto, err)
-		task.statusChannel <- StatusFailed
+		task.statusChannel <- pb_worker.ExecutionStatus_FAILED
 		return
 	}
 
@@ -100,10 +96,10 @@ func (s *scheduler) execute(task *task) {
 	// TODO(dino): Handle build failures.
 	s.bazel.Run(checkoutRoot, paths)
 
-	task.statusChannel <- StatusFinished
+	task.statusChannel <- pb_worker.ExecutionStatus_SUCCEEDED
 }
 
 type task struct {
 	request       *pb_worker.ExecutionRequest
-	statusChannel chan TaskStatus
+	statusChannel chan pb_worker.ExecutionStatus
 }

@@ -40,9 +40,11 @@ func TestStatusUpdates(t *testing.T) {
 	assert.NoError(t, err)
 
 	firstUpdate := <-out
-	assert.Equal(t, StatusRunning, firstUpdate)
+	assert.Equal(t, pb_worker.ExecutionStatus_QUEUED, firstUpdate)
 	secondUpdate := <-out
-	assert.Equal(t, StatusFinished, secondUpdate)
+	assert.Equal(t, pb_worker.ExecutionStatus_RUNNING, secondUpdate)
+	thirdUpdate := <-out
+	assert.Equal(t, pb_worker.ExecutionStatus_SUCCEEDED, thirdUpdate)
 }
 
 func createScheduler() *scheduler {

@@ -36,15 +36,10 @@ func (s *Worker) Execute(request *pb_worker.ExecutionRequest, stream pb_worker.W
 	// Listen for updates from the scheduler and send them to the caller.
 	for status := range out {
 		response := &pb_worker.ExecutionResponse{
-			ExecutionStatus: createStatusProto(status),
+			ExecutionStatus: status,
 		}
 		stream.SendMsg(response)
 	}
 
 	return nil
-}
-
-func createStatusProto(status scheduler.TaskStatus) *pb_worker.ExecutionStatus {
-	// TODO(dino): Finalize the status proto and implement this.
-	return &pb_worker.ExecutionStatus{}
 }
