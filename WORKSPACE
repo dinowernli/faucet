@@ -17,8 +17,8 @@ go_proto_repositories()
 http_archive(
     name = "io_bazel",
     sha256 = "8e4646898fa9298422e69767752680d34cbf21bcae01c401b11aa74fcdb0ef66",
-    strip_prefix = "bazel-0.4.1",
-    url = "https://github.com/bazelbuild/bazel/archive/0.4.1.tar.gz",
+    strip_prefix = "bazel-0.4.4",
+    url = "https://github.com/bazelbuild/bazel/archive/0.4.4.tar.gz",
 )
 
 new_go_repository(
